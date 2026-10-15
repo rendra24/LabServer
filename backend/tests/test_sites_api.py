@@ -160,3 +160,12 @@ def test_toggle_reverts_symlink_when_db_commit_fails(client, fs, monkeypatch):
     monkeypatch.setattr(Session, "commit", lambda self: (_ for _ in ()).throw(RuntimeError("x")))
     assert client.post(f"/api/v1/sites/{sid}/toggle").status_code == 500
     assert not fs.is_enabled("app.local")
+
+
+def test_delete_row_without_file_also_removes_dangling_symlink(client, fs):
+    sid = _create(client).json()["id"]
+    client.post(f"/api/v1/sites/{sid}/toggle")
+    (fs.available / "app.local").unlink()  # berkas hilang di luar dashboard
+    assert (fs.enabled / "app.local").is_symlink()  # link menggantung bikin nginx -t gagal
+    assert client.delete(f"/api/v1/sites/{sid}").status_code == 204
+    assert not (fs.enabled / "app.local").is_symlink()

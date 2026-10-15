@@ -1,4 +1,5 @@
 import re
+from contextlib import suppress
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Query, Response
@@ -164,6 +165,9 @@ def delete_site(site_id: int, db: DbSession, fs: Files):
         db.flush()
         if has_file:
             fs.delete(name)
+        else:
+            with suppress(AppError):  # link menggantung membuat nginx -t gagal
+                fs.disable(name)
         db.commit()
     except BaseException:
         db.rollback()

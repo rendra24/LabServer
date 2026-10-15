@@ -35,7 +35,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 2.1, Task 2.2
 - [x] **2.4** Implementasikan pencatatan otomatis ke tabel `audit_logs` setiap kali terjadi pembuatan, modifikasi berkas, atau perubahan status symlink.
   - *Dependensi:* Task 2.3
-- [ ] **2.5** Bangun tampilan antarmuka web daftar situs menggunakan Tailwind CSS (menampilkan nama berkas, domain utama, dan status toggle aktif/nonaktif).
+- [x] **2.5** Bangun tampilan antarmuka web daftar situs menggunakan Tailwind CSS (menampilkan nama berkas, domain utama, dan status toggle aktif/nonaktif).
   - *Dependensi:* Task 2.3
 - [ ] **2.6** Integrasikan raw text code editor (Monaco Editor / Ace Editor) dengan syntax highlighting Nginx pada halaman editor konfigurasi.
   - *Dependensi:* Task 2.5
