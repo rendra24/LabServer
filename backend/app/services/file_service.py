@@ -54,8 +54,11 @@ class FileService:
         return self._path(name).is_file()
 
     def list_files(self) -> list[str]:
+        # nama yang tidak lolos validasi tidak bisa dikelola, jadi tidak ditampilkan
         return sorted(
-            p.name for p in self.available.iterdir() if not p.name.startswith(".") and p.is_file()
+            p.name
+            for p in self.available.iterdir()
+            if _FILENAME_RE.fullmatch(p.name) and not p.name.startswith(".") and p.is_file()
         )
 
     def read(self, name: str) -> str:
