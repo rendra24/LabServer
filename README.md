@@ -23,6 +23,12 @@ Health check: `GET /api/health`. Halaman: `/sites`, `/editor/:id`, `/curl-tester
 
 Di mesin non-Debian (mis. macOS) perintah `sudo nginx -t` / `systemctl` tidak ada; tes memakai mock, dan untuk dev bisa menunjuk skrip pengganti lewat `SUDO_BIN`, `NGINX_BIN`, `SYSTEMCTL_BIN` (lihat `.env.example`). Port Curl Tester dibatasi `CURL_ALLOWED_PORTS`.
 
+## Melihat dashboard di lokal
+```bash
+deploy/dev-run.sh      # lalu buka http://127.0.0.1:8000/sites
+```
+Memakai direktori Nginx palsu di `.devdata/` (tidak menyentuh `/etc/nginx`). `nginx -t` dijalankan sungguhan bila nginx terpasang; reload hanya stub.
+
 ## Frontend
 HTML/JS statis di `frontend/`, disajikan oleh FastAPI (`/sites`, `/editor/:id`). Editor: Ace dari CDN jsdelivr. CSS Tailwind (CLI standalone, `brew install tailwindcss`) di-commit; bangun ulang setelah mengubah kelas:
 ```bash
