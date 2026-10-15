@@ -18,6 +18,7 @@ check(){ local msg="$1"; shift; if "$@" >/dev/null 2>&1; then ok "$msg"; else ba
 here="$(cd "$(dirname "$0")" && pwd)"
 
 check "user $APP_USER ada" id "$APP_USER"
+check "curl terpasang (dipakai Curl Tester)" command -v curl
 
 # --- sudoers --------------------------------------------------------------------------------
 S=/etc/sudoers.d/dashboard-server
@@ -41,7 +42,9 @@ listen="$(ss -ltnH 'sport = :8000' 2>/dev/null | awk '{print $4}')"
 if echo "$listen" | grep -vqE '^(127\.0\.0\.1|\[::1\]):8000$'; then bad "backend listen di interface publik: $listen"; else ok "backend hanya listen di loopback"; fi
 check "GET /api/health langsung ke backend" bash -c "curl -fsS --max-time 5 http://127.0.0.1:8000/api/health | grep -q '\"status\":\"ok\"'"
 [ "$(stat -c '%a' /opt/dashboard-server/backend/.env 2>/dev/null)" = "600" ] && ok ".env mode 0600" || bad ".env harus 0600"
-if git -C /opt/dashboard-server ls-files --error-unmatch backend/.env >/dev/null 2>&1; then bad ".env ter-track git"; else ok ".env tidak ter-track git"; fi
+if ! command -v git >/dev/null || ! git -C /opt/dashboard-server rev-parse >/dev/null 2>&1; then
+  echo "SKIP  cek .env ter-track git (git/repo tidak ada di host)"
+elif git -C /opt/dashboard-server ls-files --error-unmatch backend/.env >/dev/null 2>&1; then bad ".env ter-track git"; else ok ".env tidak ter-track git"; fi
 
 # --- gateway --------------------------------------------------------------------------------
 if [ -n "$GATEWAY" ]; then

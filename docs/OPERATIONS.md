@@ -1,10 +1,10 @@
 # OPERATIONS — Dashboard Server
 
-Panduan operasional (Task 4.5). Target: Ubuntu/Debian dengan Nginx, PostgreSQL ≥ 12, Python 3.11+.
+Panduan operasional (Task 4.5). Target: Ubuntu/Debian dengan Nginx, PostgreSQL ≥ 12, Python 3.11+, `curl`, `sudo`, `apache2-utils`.
 
-> **Status verifikasi.** Langkah bertanda ✔ sudah dicoba di mesin pengembangan (macOS, Nginx/PHP/Docker nyata, `visudo`, PostgreSQL). Langkah bertanda ⚠ **belum dijalankan di VPS Linux** (Task 4.4 menunggu akses VPS). Jalankan `deploy/verify-deployment.sh` di VPS untuk memeriksanya, lalu perbarui dokumen ini.
+> **Status verifikasi.** Langkah bertanda ✔ sudah dicoba di mesin pengembangan (macOS: Nginx/PHP/Docker nyata, `visudo`, PostgreSQL) dan/atau di container **Ubuntu 24.04** (Nginx 1.24, sudo 1.9 asli: bagian 1, 2, 5). Langkah bertanda ⚠ **belum dijalankan di VPS Linux** (Task 4.4 menunggu akses VPS). Jalankan `deploy/verify-deployment.sh` di VPS untuk memeriksanya, lalu perbarui dokumen ini.
 
-## 1. User sistem dan izin direktori ⚠
+## 1. User sistem dan izin direktori ✔ (container Ubuntu 24.04)
 
 ```bash
 useradd --system --create-home --shell /usr/sbin/nologin dashboard_app
@@ -18,7 +18,7 @@ Berkas lama di direktori itu tetap milik root dan **tidak** bisa diubah dashboar
 `chgrp nginxconf /etc/nginx/sites-available/* && chmod g+w /etc/nginx/sites-available/*`.
 `nginx.conf` utama harus memuat `include /etc/nginx/sites-enabled/*;`.
 
-## 2. Sudoers (hak minimum) ✔ sintaks · ⚠ eksekusi nyata
+## 2. Sudoers (hak minimum) ✔ (container Ubuntu 24.04: `nginx -t` tanpa password, perintah lain ditolak)
 
 ```bash
 install -m 0440 -o root -g root deploy/dashboard-server.sudoers /etc/sudoers.d/dashboard-server
@@ -50,7 +50,7 @@ ss -ltn 'sport = :8000'        # harus 127.0.0.1:8000, bukan 0.0.0.0
 ```
 Blokir juga port 8000 dari luar di firewall (`ufw`/`iptables`) sebagai lapis kedua.
 
-## 5. Gateway: Basic Auth + IP whitelist ✔ perilaku · ⚠ di VPS
+## 5. Gateway: Basic Auth + IP whitelist ✔ (Nginx 1.24 Ubuntu) · ⚠ TLS/IP publik di VPS
 
 ```bash
 apt install apache2-utils                 # untuk htpasswd
@@ -59,7 +59,7 @@ chmod 640 /etc/nginx/.htpasswd && chgrp www-data /etc/nginx/.htpasswd
 cp deploy/nginx-dashboard.conf /etc/nginx/sites-available/dashboard-server
 ```
 Edit `server_name` dan blok `allow`/`deny` (IP admin, subnet VPN). Aktifkan (`ln -s`), lalu `nginx -t && systemctl reload nginx`.
-Perilaku yang sudah teruji dengan Nginx nyata: tanpa kredensial → **401**, kredensial salah → **401**, benar → **200**, IP di luar whitelist → **403** (diperiksa sebelum Basic Auth). Cek template tanpa menyentuh `/etc`: `deploy/check-nginx-template.sh`.
+Perilaku yang sudah teruji (Nginx macOS 1.27 dan Ubuntu 1.24): tanpa kredensial → **401**, kredensial salah → **401**, benar → **200**, IP di luar whitelist → **403** (diperiksa sebelum Basic Auth). Cek template tanpa menyentuh `/etc`: `deploy/check-nginx-template.sh`.
 Dashboard **tidak** punya login sendiri: siapa pun yang lolos gateway adalah administrator penuh. Pasang TLS di gateway (mis. Certbot) agar kata sandi Basic Auth tidak lewat jaringan polos. Otomasi SSL bukan bagian MVP.
 
 ## 6. Verifikasi menyeluruh ⚠
