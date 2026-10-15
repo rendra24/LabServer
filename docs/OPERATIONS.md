@@ -2,6 +2,8 @@
 
 Panduan operasional (Task 4.5). Target: Ubuntu/Debian dengan Nginx, PostgreSQL ≥ 12, Python 3.11+, `curl`, `sudo`, `apache2-utils`.
 
+> **Belum teruji (butuh VPS/systemd):** unit systemd (bagian 4: `systemctl`, `enable`, restart otomatis), `systemctl reload nginx` sungguhan (di container diganti skrip yang memanggil `nginx -s reload`, dipanggil lewat aturan sudoers yang sama), TLS, firewall, dan jaringan publik.
+>
 > **Status verifikasi.** Langkah bertanda ✔ sudah dicoba di mesin pengembangan (macOS: Nginx/PHP/Docker nyata, `visudo`, PostgreSQL) dan/atau di container **Ubuntu 24.04** (Nginx 1.24, sudo 1.9 asli: bagian 1, 2, 5). Langkah bertanda ⚠ **belum dijalankan di VPS Linux** (Task 4.4 menunggu akses VPS). Jalankan `deploy/verify-deployment.sh` di VPS untuk memeriksanya, lalu perbarui dokumen ini.
 
 ## 1. User sistem dan izin direktori ✔ (container Ubuntu 24.04)
@@ -27,16 +29,17 @@ deploy/verify-sudoers.sh dashboard_app           # sebagai root
 ```
 Isinya hanya dua perintah persis: `/usr/sbin/nginx -t` dan `/bin/systemctl reload nginx` (sebagai root, tanpa password). Backend memanggilnya sebagai `sudo -n <perintah>`; `curl` **tidak** memakai sudo. Jangan pernah mengganti dengan `ALL`. Edit hanya lewat `visudo -f /etc/sudoers.d/dashboard-server`; berkas yang rusak bisa mengunci sudo untuk semua user. Jika path binary berbeda (`which nginx systemctl`), sesuaikan sudoers **dan** env `NGINX_BIN` / `SYSTEMCTL_BIN`.
 
-## 3. PostgreSQL ✔
+## 3. PostgreSQL ✔ (container Ubuntu 24.04, PostgreSQL 16)
 
 ```bash
-sudo -u postgres createdb dashboard_server        # pemilik: role migrasi
+sudo -u postgres psql -c "CREATE ROLE dashboard_owner LOGIN PASSWORD 'GANTI'"
+sudo -u postgres createdb -O dashboard_owner dashboard_server   # pemilik tabel = role migrasi
 cd /opt/dashboard-server/backend
 python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env && chmod 600 .env && chown dashboard_app: .env   # isi DATABASE_URL
 .venv/bin/alembic upgrade head          # jalankan dengan role pemilik tabel
 .venv/bin/python -m app.seed            # opsional: data contoh
-psql -d dashboard_server -v app_role=dashboard_app -v app_password='GANTI' -f deploy/db-roles.sql
+sudo -u postgres psql -d dashboard_server -v app_role=dashboard_app -v app_password='GANTI' -f deploy/db-roles.sql   # superuser: perlu CREATE ROLE
 ```
 `DATABASE_URL` aplikasi harus memakai **role runtime** (`dashboard_app`), bukan pemilik. Role itu hanya punya SELECT+INSERT pada `audit_logs` (append-only) — terbukti: DELETE/UPDATE/TRUNCATE ditolak, sementara semua fitur dashboard tetap jalan. Migrasi (`alembic`) memakai `DATABASE_URL` pemilik, jadi jalankan dengan `DATABASE_URL=... alembic upgrade head`.
 Backup dan retensi: lihat `docs/DATABASE.md`.
@@ -62,7 +65,7 @@ Edit `server_name` dan blok `allow`/`deny` (IP admin, subnet VPN). Aktifkan (`ln
 Perilaku yang sudah teruji (Nginx macOS 1.27 dan Ubuntu 1.24): tanpa kredensial → **401**, kredensial salah → **401**, benar → **200**, IP di luar whitelist → **403** (diperiksa sebelum Basic Auth). Cek template tanpa menyentuh `/etc`: `deploy/check-nginx-template.sh`.
 Dashboard **tidak** punya login sendiri: siapa pun yang lolos gateway adalah administrator penuh. Pasang TLS di gateway (mis. Certbot) agar kata sandi Basic Auth tidak lewat jaringan polos. Otomasi SSL bukan bagian MVP.
 
-## 6. Verifikasi menyeluruh ⚠
+## 6. Verifikasi menyeluruh ✔ (container; 22 cek lolos, termasuk gateway dan hak DB)
 
 ```bash
 read -rs DASH_PASS; export DASH_USER=admin DASH_PASS DASH_DB_ROLE=dashboard_app

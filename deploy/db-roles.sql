@@ -1,5 +1,6 @@
--- Role runtime dashboard (hak minimum). Jalankan SETELAH `alembic upgrade head`, oleh role pemilik tabel:
---   psql -d dashboard_server -v app_role=dashboard_app -v app_password='GANTI' -f deploy/db-roles.sql
+-- Role runtime dashboard (hak minimum). Jalankan SETELAH `alembic upgrade head`, sebagai superuser
+-- (perlu CREATE ROLE; role pemilik tabel biasa tidak cukup):
+--   sudo -u postgres psql -d dashboard_server -v app_role=dashboard_app -v app_password='GANTI' -f deploy/db-roles.sql
 -- audit_logs append-only: hanya SELECT + INSERT (PERMISSIONS.md). FK ON DELETE SET NULL tetap
 -- berjalan karena aksi referensial dieksekusi dengan hak pemilik tabel.
 SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'app_role', :'app_password')

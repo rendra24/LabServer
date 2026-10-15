@@ -84,10 +84,10 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 - [x] **4.3** Simulasikan skenario error sintaks Nginx (memasukkan berkas konfigurasi rusak): verifikasi bahwa Nginx daemon tidak mengalami downtime, tombol reload terkunci, dan error tercatat di audit log.
   - *Dependensi:* Task 3.3
 - [ ] **4.4** Uji coba deployment menyeluruh pada server VPS Ubuntu/Debian target (validasi hak akses file, user permissions, visudo, dan reverse proxy Nginx).
-  - *Status 2026-10-16:* artefak siap (`deploy/verify-deployment.sh`, `deploy/dashboard-server.service`, `deploy/db-roles.sql`); **eksekusi di VPS belum dilakukan** (tidak ada akses VPS di sesi ini).
+  - *Status 2026-10-16:* artefak siap (`deploy/verify-deployment.sh`, `deploy/dashboard-server.service`, `deploy/db-roles.sql`); diuji di container Ubuntu 24.04 (Nginx 1.24, sudo 1.9, PostgreSQL 16, Python 3.12): user/grup/izin, sudoers, htpasswd, gateway 401/200/403, backend sebagai `dashboard_app` dengan role DB append-only, alur dashboard penuh, `verify-deployment.sh` 22 cek lolos. **Belum terbukti:** unit systemd, `systemctl reload nginx` asli, TLS, firewall, VPS sungguhan.
   - *Dependensi:* Task 4.2, Task 4.3
 - [ ] **4.5** Tulis panduan operasional teknis (prosedur setup sudoers, konfigurasi IP whitelist, pembuatan akun basic auth `htpasswd`, dan troubleshooting izin direktori).
-  - *Status 2026-10-16:* draf `docs/OPERATIONS.md` selesai; langkah bertanda ⚠ menunggu verifikasi 4.4.
+  - *Status 2026-10-16:* `docs/OPERATIONS.md` sudah dikoreksi dari hasil uji container (mis. `db-roles.sql` harus superuser); bagian systemd/TLS masih ⚠ menunggu VPS.
   - *Dependensi:* Task 4.4
 
 **DoD:** Seluruh fitur teruji pada lingkungan lokal berdampingan dengan PHP/Docker dan VPS Linux; penanganan error sintaks terbukti aman tanpa downtime daemon; dokumentasi operasional dan izin sistem lengkap.
