@@ -77,7 +77,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 
 **Tujuan:** Memvalidasi kestabilan aplikasi bersama runtime lokal (PHP 8.3, PHP 7.4, Docker), skenario penanganan kegagalan konfigurasi, kesiapan deployment VPS Linux, serta dokumentasi sistem.
 
-- [ ] **4.1** Buat automated test/self-check script untuk memvalidasi sanitasi parameter CLI pada modul subprocess (mencegah command injection pada pemanggilan Nginx dan Curl).
+- [x] **4.1** Buat automated test/self-check script untuk memvalidasi sanitasi parameter CLI pada modul subprocess (mencegah command injection pada pemanggilan Nginx dan Curl).
   - *Dependensi:* Task 3.1, Task 3.4
 - [ ] **4.2** Uji integrasi konfigurasi virtual host terhadap runtime lokal: verifikasi reverse proxy ke port container Docker dan FastCGI pass ke PHP 8.3-FPM serta PHP 7.4-FPM menggunakan Curl Tester (`--resolve`).
   - *Dependensi:* Task 3.7
