@@ -79,9 +79,9 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 
 - [x] **4.1** Buat automated test/self-check script untuk memvalidasi sanitasi parameter CLI pada modul subprocess (mencegah command injection pada pemanggilan Nginx dan Curl).
   - *Dependensi:* Task 3.1, Task 3.4
-- [ ] **4.2** Uji integrasi konfigurasi virtual host terhadap runtime lokal: verifikasi reverse proxy ke port container Docker dan FastCGI pass ke PHP 8.3-FPM serta PHP 7.4-FPM menggunakan Curl Tester (`--resolve`).
+- [x] **4.2** Uji integrasi konfigurasi virtual host terhadap runtime lokal: verifikasi reverse proxy ke port container Docker dan FastCGI pass ke PHP 8.3-FPM serta PHP 7.4-FPM menggunakan Curl Tester (`--resolve`).
   - *Dependensi:* Task 3.7
-- [ ] **4.3** Simulasikan skenario error sintaks Nginx (memasukkan berkas konfigurasi rusak): verifikasi bahwa Nginx daemon tidak mengalami downtime, tombol reload terkunci, dan error tercatat di audit log.
+- [x] **4.3** Simulasikan skenario error sintaks Nginx (memasukkan berkas konfigurasi rusak): verifikasi bahwa Nginx daemon tidak mengalami downtime, tombol reload terkunci, dan error tercatat di audit log.
   - *Dependensi:* Task 3.3
 - [ ] **4.4** Uji coba deployment menyeluruh pada server VPS Ubuntu/Debian target (validasi hak akses file, user permissions, visudo, dan reverse proxy Nginx).
   - *Dependensi:* Task 4.2, Task 4.3
