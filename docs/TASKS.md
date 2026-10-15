@@ -39,7 +39,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 2.3
 - [x] **2.6** Integrasikan raw text code editor (Monaco Editor / Ace Editor) dengan syntax highlighting Nginx pada halaman editor konfigurasi.
   - *Dependensi:* Task 2.5
-- [ ] **2.7** Hubungkan aksi simpan editor ke endpoint update konfigurasi backend dan tampilkan feedback visual (status tersimpan/gagal).
+- [x] **2.7** Hubungkan aksi simpan editor ke endpoint update konfigurasi backend dan tampilkan feedback visual (status tersimpan/gagal).
   - *Dependensi:* Task 2.4, Task 2.6
 
 **DoD:** Pengguna dapat melihat daftar situs, membuat berkas baru, menyunting konfigurasi via Monaco/Ace Editor, mengaktifkan/menonaktifkan symlink melalui toggle switch, dan seluruh perubahan berkas tercatat di `audit_logs`.

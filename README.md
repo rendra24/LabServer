@@ -21,6 +21,12 @@ cd backend
 ```
 Health check: `GET /api/health`.
 
+## Frontend
+HTML/JS statis di `frontend/`, disajikan oleh FastAPI (`/sites`, `/editor/:id`). Editor: Ace dari CDN jsdelivr. CSS Tailwind (CLI standalone, `brew install tailwindcss`) di-commit; bangun ulang setelah mengubah kelas:
+```bash
+tailwindcss -i frontend/src/input.css -o frontend/static/app.css --minify
+```
+
 ## Deploy (host Linux)
 - `deploy/nginx-dashboard.conf` — gateway Basic Auth + IP whitelist (ganti placeholder). Cek sintaks: `deploy/check-nginx-template.sh`.
 - `deploy/dashboard-server.sudoers` — salin ke `/etc/sudoers.d/dashboard-server` (0440, root); verifikasi dengan `deploy/verify-sudoers.sh` (sebagai root).
