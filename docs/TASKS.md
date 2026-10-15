@@ -58,7 +58,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 3.1, Task 3.2
 - [x] **3.4** Buat modul backend pemanggil CLI `curl` yang mendukung injeksi flag `--resolve <host>:<port>:<ip>` serta kustomisasi header `Host`.
   - *Dependensi:* Task 1.1
-- [ ] **3.5** Bangun endpoint API untuk menjalankan pengujian curl dan menyimpan konfigurasi target ke tabel `test_profiles`.
+- [x] **3.5** Bangun endpoint API untuk menjalankan pengujian curl dan menyimpan konfigurasi target ke tabel `test_profiles`.
   - *Dependensi:* Task 3.4
 - [ ] **3.6** Bangun form antarmuka Curl Connectivity Tester (input domain target, target IP resolusi, port, protokol, dan custom headers).
   - *Dependensi:* Task 3.5

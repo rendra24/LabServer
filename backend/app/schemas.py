@@ -125,3 +125,28 @@ class CurlTestResponse(BaseModel):
     raw_output: str
     command: str
     error: str | None = None
+
+
+class TestProfileCreate(BaseModel):
+    __test__ = False
+
+    site_id: int
+    target_domain: str = Field(pattern=_HOSTNAME_RE)
+    resolve_ip: str
+    port: int = Field(default=80, ge=1, le=65535)
+    custom_headers: dict[str, str] | None = None
+
+    _ip = field_validator("resolve_ip")(_check_ip)
+    _headers = field_validator("custom_headers")(_check_headers)
+
+
+class TestProfileResponse(BaseModel):
+    __test__ = False
+
+    id: int
+    site_id: int
+    target_domain: str
+    resolve_ip: str
+    port: int
+    custom_headers: dict[str, str] | None
+    updated_at: datetime

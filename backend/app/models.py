@@ -31,3 +31,18 @@ class AuditLog(Base):
     execution_output: Mapped[str | None] = mapped_column(Text)
     is_success: Mapped[bool] = mapped_column(Boolean)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class TestProfile(Base):
+    __test__ = False  # bukan kelas tes pytest
+    __tablename__ = "test_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    site_id: Mapped[int] = mapped_column(ForeignKey("sites.id", ondelete="CASCADE"))
+    target_domain: Mapped[str] = mapped_column(String(255))
+    resolve_ip: Mapped[str] = mapped_column(String(45))
+    port: Mapped[int] = mapped_column(Integer, server_default=text("80"))
+    custom_headers: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
