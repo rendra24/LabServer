@@ -12,7 +12,7 @@ from app.schemas import (
     TestProfileCreate,
     TestProfileResponse,
 )
-from app.services import curl_service
+from app.services import audit_service, curl_service
 
 router = APIRouter(prefix="/api/v1", tags=["curl"])
 
@@ -38,9 +38,26 @@ def _profile_response(p: TestProfile) -> TestProfileResponse:
 
 
 @router.post("/curl/test", response_model=CurlTestResponse)
-def run_curl_test(body: CurlTestRequest):
+def run_curl_test(body: CurlTestRequest, db: DbSession):
     curl_service.check_target(body)
-    return curl_service.run_curl_test(body)
+    if body.site_id is not None and db.get(Site, body.site_id) is None:
+        raise AppError(404, "SITE_NOT_FOUND", "Situs tidak ditemukan.")
+    result = curl_service.run_curl_test(body)
+    summary = (
+        f"HTTP {result['status_code']} · TTFB {result['ttfb_ms']} ms · {result['ssl_status']}"
+        if result["is_success"]
+        else f"Gagal: {result['error']}"
+    )
+    audit_service.record(
+        db,
+        body.site_id,
+        audit_service.CURL_TEST,
+        result["command"],
+        f"{summary}\n{result['raw_output']}".strip(),
+        result["is_success"],
+    )
+    db.commit()
+    return result
 
 
 @router.get("/profiles", response_model=list[TestProfileResponse])

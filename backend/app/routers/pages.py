@@ -22,3 +22,8 @@ def sites_page():
 @router.get("/editor/{site_id:int}")
 def editor_page(site_id: int | None = None):
     return FileResponse(FRONTEND_DIR / "editor.html")
+
+
+@router.get("/curl-tester")
+def curl_tester_page():
+    return FileResponse(FRONTEND_DIR / "curl-tester.html")

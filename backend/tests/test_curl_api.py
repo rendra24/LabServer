@@ -150,3 +150,43 @@ def test_profile_list_tolerates_seed_json(client, migrated_engine):
         )
     r = client.get("/api/v1/profiles")
     assert r.status_code == 200 and r.json()[0]["custom_headers"] is None
+
+
+# --- audit (3.7) ----------------------------------------------------------------------------
+def _audit(engine):
+    with engine.connect() as c:
+        return c.execute(
+            text(
+                "SELECT site_id, action_type, command_executed, execution_output, is_success"
+                " FROM audit_logs ORDER BY id"
+            )
+        ).all()
+
+
+def test_curl_test_is_audited_with_command_and_result(client, local_server, migrated_engine):
+    sid = _create(client).json()["id"]
+    client.post("/api/v1/curl/test", json=_body(local_server, site_id=sid))
+    (log,) = _audit(migrated_engine)[-1:]
+    assert log[0] == sid and log[1] == "CURL_TEST" and log[4] is True
+    assert log[2].startswith("/usr/bin/curl ") and "--resolve" in log[2]
+    assert "HTTP 200" in log[3] and "X-Host-Seen" in log[3]
+
+
+def test_failed_curl_is_audited_as_failure(client, monkeypatch, migrated_engine):
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        closed = s.getsockname()[1]
+    monkeypatch.setattr(curl_service.get_settings(), "curl_allowed_ports", str(closed))
+    client.post("/api/v1/curl/test", json=_body(closed))
+    (log,) = _audit(migrated_engine)
+    assert log[4] is False and "ditolak" in log[3]
+
+
+def test_blocked_curl_is_not_executed_or_audited(client, migrated_engine):
+    client.post("/api/v1/curl/test", json=_body(5432))
+    assert _audit(migrated_engine) == []
+
+
+def test_curl_unknown_site_id_404(client, local_server):
+    r = client.post("/api/v1/curl/test", json=_body(local_server, site_id=99999))
+    assert r.status_code == 404

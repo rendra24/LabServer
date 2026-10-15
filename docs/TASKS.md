@@ -60,9 +60,9 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 1.1
 - [x] **3.5** Bangun endpoint API untuk menjalankan pengujian curl dan menyimpan konfigurasi target ke tabel `test_profiles`.
   - *Dependensi:* Task 3.4
-- [ ] **3.6** Bangun form antarmuka Curl Connectivity Tester (input domain target, target IP resolusi, port, protokol, dan custom headers).
+- [x] **3.6** Bangun form antarmuka Curl Connectivity Tester (input domain target, target IP resolusi, port, protokol, dan custom headers).
   - *Dependensi:* Task 3.5
-- [ ] **3.7** Integrasikan penampil hasil curl tester (HTTP Status Code, TTFB/latensi, response headers, status SSL) dan simpan hasil eksekusi ke `audit_logs`.
+- [x] **3.7** Integrasikan penampil hasil curl tester (HTTP Status Code, TTFB/latensi, response headers, status SSL) dan simpan hasil eksekusi ke `audit_logs`.
   - *Dependensi:* Task 3.6
 - [ ] **3.8** *(ditambahkan 2026-10-16, atas permintaan user; lihat DECISIONS.md)* Bangun endpoint `GET /api/v1/audit-logs` (filter `action_type`, `site_id`, `is_success`; paginasi `limit`/`offset`; terbaru dulu; read-only).
   - *Dependensi:* Task 2.4, Task 3.7
