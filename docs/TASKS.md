@@ -13,10 +13,10 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 1.1
 - [x] **1.3** Eksekusi migrasi dan pasang data awalan (*seeding*) pada tabel `sites`, `test_profiles`, dan `audit_logs`.
   - *Dependensi:* Task 1.2
-- [ ] **1.4** Siapkan template konfigurasi Nginx reverse proxy untuk membungkus dashboard (`:8000`) dengan proteksi `auth_basic` (HTTP Basic Auth) dan blok `allow`/`deny` (IP Whitelist).
+- [x] **1.4** Siapkan template konfigurasi Nginx reverse proxy untuk membungkus dashboard (`:8000`) dengan proteksi `auth_basic` (HTTP Basic Auth) dan blok `allow`/`deny` (IP Whitelist).
   - *Dependensi:* Task 1.1
-- [ ] **1.5** Buat konfigurasi izin sudoers (`/etc/sudoers.d/dashboard-server`) untuk eksekusi tanpa password: `/usr/sbin/nginx -t` dan `/bin/systemctl reload nginx`.
-- [ ] **1.6** Bangun koneksi database pool dan implementasikan endpoint *health check* (`GET /api/health`) untuk memvalidasi kesiapan backend dan koneksi database PostgreSQL.
+- [x] **1.5** Buat konfigurasi izin sudoers (`/etc/sudoers.d/dashboard-server`) untuk eksekusi tanpa password: `/usr/sbin/nginx -t` dan `/bin/systemctl reload nginx`.
+- [x] **1.6** Bangun koneksi database pool dan implementasikan endpoint *health check* (`GET /api/health`) untuk memvalidasi kesiapan backend dan koneksi database PostgreSQL.
   - *Dependensi:* Task 1.2
 
 **DoD:** Aplikasi backend berjalan di port `:8000`, terproteksi Nginx reverse proxy (IP Whitelist & Basic Auth), tabel PostgreSQL terinisialisasi dengan data seed, dan eksekusi sudo untuk perintah Nginx dapat dijalankan tanpa prompt password.

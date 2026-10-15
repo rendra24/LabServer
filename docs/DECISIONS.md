@@ -27,6 +27,7 @@ Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERM
 - Nama file migrasi `YYYYMMDDHHMM_<deskripsi>.py` (Alembic `file_template`).
 - DB dev lokal: `dashboard_server`; DB tes: `dashboard_server_test` (dikosongkan oleh tes migrasi).
 - `backend/.env` untuk dev lokal (di-gitignore); contoh di `.env.example`.
+- Sudoers memakai `(root)` bukan `(ALL)` sebagai run-as user: perintah sama, hak lebih sempit.
 - Docs OpenAPI (`/docs`) dimatikan: backend internal, kurangi permukaan.
 
 ## Usulan (TIDAK diimplementasikan)
