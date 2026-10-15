@@ -27,9 +27,9 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 
 **Tujuan:** Membangun antarmuka editor dan backend I/O untuk membaca, menulis, membuat berkas di `/etc/nginx/sites-available/`, serta mengelola symlink di `/etc/nginx/sites-enabled/`.
 
-- [ ] **2.1** Buat modul backend I/O untuk listing file, membaca isi file, membuat file baru, dan menghapus file di direktori `/etc/nginx/sites-available/`.
+- [x] **2.1** Buat modul backend I/O untuk listing file, membaca isi file, membuat file baru, dan menghapus file di direktori `/etc/nginx/sites-available/`.
   - *Dependensi:* Task 1.1
-- [ ] **2.2** Buat modul backend untuk deteksi, pembuatan, dan penghapusan *symbolic link* di `/etc/nginx/sites-enabled/` dengan sinkronisasi status ke tabel `sites`.
+- [x] **2.2** Buat modul backend untuk deteksi, pembuatan, dan penghapusan *symbolic link* di `/etc/nginx/sites-enabled/` dengan sinkronisasi status ke tabel `sites`.
   - *Dependensi:* Task 2.1
 - [ ] **2.3** Bangun REST API CRUD untuk manajemen situs (daftar situs, detail konfigurasi, buat/edit berkas, hapus berkas, dan toggle status symlink).
   - *Dependensi:* Task 2.1, Task 2.2
