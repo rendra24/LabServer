@@ -37,6 +37,8 @@ Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERM
 - Impor otomatis: domain diambil dari `server_name` pertama; jika tidak valid, dipakai nama berkas yang disanitasi.
 - Batas isi konfigurasi 1 MiB; karakter null ditolak.
 - Audit hanya mencatat operasi mutasi yang berhasil (satu transaksi dengan operasinya).
+- Sprint 4: artefak deployment di `deploy/` (unit systemd, `db-roles.sql`, `verify-deployment.sh`) dan `docs/OPERATIONS.md` adalah pelengkap Task 4.4/4.5, bukan fitur aplikasi. Role DB runtime terpisah dari pemilik tabel agar `audit_logs` benar-benar append-only (PERMISSIONS.md); terbukti: DELETE/UPDATE/TRUNCATE ditolak, fitur lain jalan.
+- Tes integrasi (`backend/tests/integration/`) memakai nginx, php-fpm, dan (opsional, `INTEGRATION_DOCKER_IMAGE`) container nyata; dilewati otomatis bila tidak tersedia.
 - Sudoers memakai `(root)` bukan `(ALL)` sebagai run-as user: perintah sama, hak lebih sempit.
 - Docs OpenAPI (`/docs`) dimatikan: backend internal, kurangi permukaan.
 

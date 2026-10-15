@@ -1,0 +1,18 @@
+# /etc/systemd/system/dashboard-server.service
+# CATATAN: jangan aktifkan NoNewPrivileges= atau ProtectSystem=strict tanpa ReadWritePaths=
+# /etc/nginx/...; keduanya memutus `sudo nginx -t` / penulisan sites-available.
+[Unit]
+Description=Dashboard Server (Nginx manager)
+After=network.target postgresql.service
+
+[Service]
+User=dashboard_app
+Group=dashboard_app
+WorkingDirectory=/opt/dashboard-server/backend
+# .env (0600, milik dashboard_app) berisi DATABASE_URL, dll.
+ExecStart=/opt/dashboard-server/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

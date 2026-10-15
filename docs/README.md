@@ -14,3 +14,5 @@ Ekstrak ke folder `docs/` di repo proyekmu, lalu ikuti `AGENT-PROMPT.md` untuk m
 | [PERMISSIONS.md](PERMISSIONS.md) | Matriks hak akses, enforcement, risiko (dari PRD v2) |
 | [ROLES.md](ROLES.md) | Peran/aktor, tanggung jawab, area akses (dari PRD v2) |
 | [TASKS.md](TASKS.md) | Sprint & task terperinci, dependensi, DoD (dari PRD v2) |
+| [OPERATIONS.md](OPERATIONS.md) | Panduan operasional: sudoers, gateway, htpasswd, izin direktori, troubleshooting (Task 4.5) |
+| [DECISIONS.md](DECISIONS.md) | Konflik dokumen, keputusan, asumsi, usulan selama implementasi |
