@@ -50,7 +50,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 
 **Tujuan:** Mengintegrasikan eksekusi verifikasi sintaks Nginx, reload daemon aman berbasis status validasi, serta utilitas pengujian konektivitas via `curl` CLI.
 
-- [ ] **3.1** Buat modul wrapper `subprocess` untuk menjalankan perintah `sudo nginx -t`, menangkap output `stdout`, `stderr`, dan return code secara aman.
+- [x] **3.1** Buat modul wrapper `subprocess` untuk menjalankan perintah `sudo nginx -t`, menangkap output `stdout`, `stderr`, dan return code secara aman.
   - *Dependensi:* Task 1.5
 - [ ] **3.2** Bangun endpoint API dan panel antarmuka konsol log interaktif untuk memicu "Test Nginx Config" serta menampilkan pesan diagnostik sintaks.
   - *Dependensi:* Task 3.1

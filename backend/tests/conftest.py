@@ -13,6 +13,9 @@ from app.deps import get_file_service  # noqa: E402
 from app.main import app  # noqa: E402
 from app.services.file_service import FileService  # noqa: E402
 
+# Modul yang memanggil get_settings() butuh DATABASE_URL; nilai ini tidak dipakai untuk koneksi.
+os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://u:p@localhost/unused")
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
