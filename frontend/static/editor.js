@@ -1,4 +1,5 @@
 import { DOMAIN_RE, api, announce, clearError, showError, validFilename } from "/static/common.js";
+import { appendLog, busy, runReload, runSyntaxTest } from "/static/diag.js";
 
 const $ = (id) => document.getElementById(id);
 const route = location.pathname.match(/^\/editor\/(new|\d+)$/);
@@ -7,6 +8,7 @@ let siteId = isNew ? null : Number(route?.[1]);
 let baseline = "";
 let baselineDomain = "";
 let editor = null;
+let syntaxValid = false; // hasil nginx -t terakhir, valid hanya untuk isi yang sudah tersimpan
 
 function content() {
   return editor.getValue();
@@ -21,6 +23,12 @@ function refreshState() {
   const badge = $("state");
   badge.textContent = dirty ? "Belum Disimpan" : "Tersimpan";
   badge.className = `badge ${dirty ? "bg-amber-900 text-amber-100" : "bg-emerald-900 text-emerald-100"}`;
+  $("reload").disabled = !(syntaxValid && !dirty);
+}
+
+function invalidateSyntax() {
+  syntaxValid = false;
+  refreshState();
 }
 
 function initEditor() {
@@ -40,8 +48,14 @@ function initEditor() {
     fontSize: 14,
     enableKeyboardAccessibility: true,
   });
-  editor.session.on("change", refreshState);
+  editor.session.on("change", invalidateSyntax);
   return true;
+}
+
+function updateNote(enabled) {
+  const note = $("diag-note");
+  note.hidden = enabled !== false;
+  note.textContent = "Situs ini nonaktif: nginx -t tidak ikut menguji berkasnya sampai symlink diaktifkan.";
 }
 
 function setBaseline(text, domain) {
@@ -60,6 +74,7 @@ async function loadExisting() {
     $("title").textContent = `Sunting ${site.filename}`;
     document.title = `${site.filename} · Dashboard Server`;
     setBaseline(site.content, site.domain_name);
+    updateNote(site.is_enabled);
     announce(`${site.filename} dimuat.`);
   } catch (e) {
     $("title").textContent = "Editor Konfigurasi";
@@ -67,6 +82,23 @@ async function loadExisting() {
     editor.setReadOnly(true);
     $("save").disabled = true;
   }
+}
+
+async function testSyntax() {
+  const log = $("log");
+  if (isDirty()) {
+    appendLog(log, "Perhatian: ada perubahan belum disimpan. nginx -t hanya menguji berkas yang sudah ada di disk.", "text-amber-300");
+  }
+  syntaxValid = await runSyntaxTest(log, siteId);
+  refreshState();
+  announce(syntaxValid ? "Sintaks Nginx valid." : "Sintaks Nginx tidak valid.");
+}
+
+async function reload() {
+  const ok = await runReload($("log"));
+  syntaxValid = false; // kunci kembali setelah reload
+  refreshState();
+  announce(ok ? "Nginx berhasil di-reload." : "Reload Nginx gagal.");
 }
 
 function fieldError(field, message) {
@@ -126,7 +158,8 @@ async function save() {
     }
     baseline = text;
     baselineDomain = domain;
-    refreshState();
+    invalidateSyntax(); // isi di disk berubah: tes ulang diperlukan
+    updateNote(site.is_enabled);
     announce(`${site.filename} berhasil disimpan.`);
   } catch (e) {
     showError(`Gagal menyimpan: ${e.message}`);
@@ -145,6 +178,8 @@ function init() {
   $("filename").disabled = !isNew;
   if (!initEditor()) return;
   $("domain").addEventListener("input", refreshState);
+  $("test").addEventListener("click", () => busy($("test"), "Menguji…", testSyntax).then(refreshState));
+  $("reload").addEventListener("click", () => busy($("reload"), "Reload…", reload).then(refreshState));
   $("meta").addEventListener("submit", (e) => {
     e.preventDefault();
     save();

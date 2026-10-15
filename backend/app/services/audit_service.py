@@ -4,6 +4,11 @@ from app.models import AuditLog
 
 CONFIG_SAVE = "CONFIG_SAVE"
 SYMLINK_TOGGLE = "SYMLINK_TOGGLE"
+NGINX_TEST = "NGINX_TEST"
+NGINX_RELOAD = "NGINX_RELOAD"
+CURL_TEST = "CURL_TEST"
+
+_MAX_OUTPUT = 65_536
 
 
 def record(
@@ -23,7 +28,7 @@ def record(
             site_id=site_id,
             action_type=action_type,
             command_executed=command,
-            execution_output=output,
+            execution_output=output[:_MAX_OUTPUT] if output else output,
             is_success=success,
         )
     )

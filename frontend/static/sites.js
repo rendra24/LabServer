@@ -1,4 +1,5 @@
 import { api, announce, clearError, el, showError } from "/static/common.js";
+import { busy, runSyntaxTest } from "/static/diag.js";
 
 const rows = document.getElementById("rows");
 const empty = document.getElementById("empty");
@@ -135,3 +136,11 @@ function remove(site) {
 }
 
 load();
+
+document.getElementById("test-all").addEventListener("click", (e) =>
+  busy(e.currentTarget, "Menguji…", async () => {
+    document.getElementById("diag").hidden = false;
+    const ok = await runSyntaxTest(document.getElementById("log"));
+    announce(ok ? "Sintaks Nginx valid." : "Sintaks Nginx tidak valid.");
+  }),
+);

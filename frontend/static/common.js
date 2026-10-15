@@ -1,10 +1,11 @@
 // Util bersama. Semua teks dari server dirender lewat textContent (tidak pernah innerHTML).
 
 export class ApiError extends Error {
-  constructor(message, status, code) {
+  constructor(message, status, code, details) {
     super(message);
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -28,7 +29,7 @@ export async function api(path, { method = "GET", body } = {}) {
   }
   if (!res.ok) {
     const e = data && data.error;
-    throw new ApiError(e?.message || "Terjadi kesalahan pada server.", res.status, e?.code);
+    throw new ApiError(e?.message || "Terjadi kesalahan pada server.", res.status, e?.code, e?.details);
   }
   return data;
 }

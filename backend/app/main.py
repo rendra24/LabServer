@@ -10,12 +10,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import get_engine
 from app.errors import AppError
-from app.routers import pages, sites
+from app.routers import nginx, pages, sites
 
 logger = logging.getLogger("app")
 
 app = FastAPI(title="Dashboard Server", docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(sites.router)
+app.include_router(nginx.router)
 app.include_router(pages.router)
 app.mount("/static", StaticFiles(directory=pages.FRONTEND_DIR / "static"), name="static")
 

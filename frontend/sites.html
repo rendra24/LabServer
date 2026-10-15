@@ -23,11 +23,18 @@
   <main id="main" class="mx-auto max-w-6xl px-4 py-6">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-xl font-semibold">Virtual Host Nginx</h1>
-      <a href="/editor/new" class="btn btn-primary">Buat Konfigurasi Baru</a>
+      <div class="flex flex-wrap gap-2">
+        <button id="test-all" type="button" class="btn">Test All Nginx Syntax</button>
+        <a href="/editor/new" class="btn btn-primary">Buat Konfigurasi Baru</a>
+      </div>
     </div>
 
     <div id="error" role="alert" hidden class="mb-4 rounded-md border border-red-500 bg-red-950 px-4 py-3 text-sm text-red-100"></div>
     <p id="status" class="sr-only" aria-live="polite"></p>
+
+    <section id="diag" hidden aria-label="Output diagnostik Nginx" class="mb-4">
+      <pre id="log" role="log" aria-label="Output diagnostik" tabindex="0" class="max-h-56 overflow-auto whitespace-pre-wrap rounded-md bg-black p-3 font-mono text-xs leading-relaxed text-slate-100"></pre>
+    </section>
 
     <div id="empty" hidden class="rounded-lg border border-dashed border-slate-700 px-6 py-16 text-center">
       <p class="mb-4 text-slate-300">Tidak ada berkas konfigurasi ditemukan di /etc/nginx/sites-available/</p>

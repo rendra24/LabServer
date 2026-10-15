@@ -52,9 +52,9 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 
 - [x] **3.1** Buat modul wrapper `subprocess` untuk menjalankan perintah `sudo nginx -t`, menangkap output `stdout`, `stderr`, dan return code secara aman.
   - *Dependensi:* Task 1.5
-- [ ] **3.2** Bangun endpoint API dan panel antarmuka konsol log interaktif untuk memicu "Test Nginx Config" serta menampilkan pesan diagnostik sintaks.
+- [x] **3.2** Bangun endpoint API dan panel antarmuka konsol log interaktif untuk memicu "Test Nginx Config" serta menampilkan pesan diagnostik sintaks.
   - *Dependensi:* Task 3.1
-- [ ] **3.3** Implementasikan endpoint dan tombol antarmuka "Reload Nginx" (`sudo systemctl reload nginx`) yang secara otomatis terkunci (*disabled*) jika hasil `nginx -t` gagal atau belum dijalankan.
+- [x] **3.3** Implementasikan endpoint dan tombol antarmuka "Reload Nginx" (`sudo systemctl reload nginx`) yang secara otomatis terkunci (*disabled*) jika hasil `nginx -t` gagal atau belum dijalankan.
   - *Dependensi:* Task 3.1, Task 3.2
 - [ ] **3.4** Buat modul backend pemanggil CLI `curl` yang mendukung injeksi flag `--resolve <host>:<port>:<ip>` serta kustomisasi header `Host`.
   - *Dependensi:* Task 1.1

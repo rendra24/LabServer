@@ -20,7 +20,7 @@
     </nav>
   </header>
 
-  <main class="mx-auto max-w-6xl px-4 py-6">
+  <main class="mx-auto max-w-7xl px-4 py-6">
     <h1 id="title" class="mb-4 text-xl font-semibold">Editor Konfigurasi</h1>
 
     <div id="error" role="alert" hidden class="mb-4 rounded-md border border-red-500 bg-red-950 px-4 py-3 text-sm text-red-100"></div>
@@ -44,10 +44,26 @@
       </div>
     </form>
 
-    <section aria-label="Editor konfigurasi" class="rounded-lg border border-slate-800">
-      <div id="editor" class="h-[60vh] min-h-80 w-full rounded-lg bg-slate-900 p-4 font-mono text-sm text-slate-300">Memuat berkas konfigurasi...</div>
-    </section>
-    <p id="editor-hint" class="mt-2 text-xs text-slate-400">Simpan dengan Ctrl/Cmd+S. Di dalam editor, tekan Esc lalu Tab untuk memindahkan fokus keluar.</p>
+    <div class="grid gap-4 lg:grid-cols-[3fr_2fr]">
+      <div>
+        <section aria-label="Editor konfigurasi" class="rounded-lg border border-slate-800">
+          <div id="editor" class="h-[60vh] min-h-80 w-full rounded-lg bg-slate-900 p-4 font-mono text-sm text-slate-300">Memuat berkas konfigurasi...</div>
+        </section>
+        <p id="editor-hint" class="mt-2 text-xs text-slate-400">Simpan dengan Ctrl/Cmd+S. Di dalam editor, tekan Esc lalu Tab untuk memindahkan fokus keluar.</p>
+      </div>
+
+      <section aria-labelledby="diag-title" class="flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
+        <h2 id="diag-title" class="mb-3 text-base font-semibold">Diagnostik Nginx</h2>
+        <div class="mb-3 flex flex-wrap gap-2">
+          <button id="test" type="button" class="btn">Test Nginx Syntax</button>
+          <button id="reload" type="button" class="btn btn-primary" disabled aria-describedby="reload-hint">Reload Nginx</button>
+        </div>
+        <p id="reload-hint" class="mb-3 text-xs text-slate-400">Reload terkunci sampai Test Nginx Syntax berhasil dan tidak ada perubahan yang belum disimpan.</p>
+        <p id="diag-note" class="mb-3 text-xs text-amber-300" hidden></p>
+        <pre id="log" role="log" aria-label="Output diagnostik" tabindex="0" class="min-h-48 flex-1 overflow-auto whitespace-pre-wrap rounded-md bg-black p-3 font-mono text-xs leading-relaxed text-slate-100"><span data-placeholder class="text-slate-400">Belum ada output. Jalankan Test Nginx Syntax.
+</span></pre>
+      </section>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.36.5/src-min-noconflict/ace.js"></script>

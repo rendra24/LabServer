@@ -56,3 +56,18 @@ class SiteDetailResponse(SiteResponse):
 class SiteList(BaseModel):
     items: list[SiteResponse]
     total: int
+
+
+class NginxTestRequest(BaseModel):
+    site_id: int | None = None
+
+
+class NginxTestResponse(BaseModel):
+    is_success: bool
+    stdout: str
+    stderr: str
+
+
+class CommandResultResponse(BaseModel):
+    is_success: bool
+    message: str
