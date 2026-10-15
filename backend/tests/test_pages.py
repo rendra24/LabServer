@@ -6,7 +6,7 @@ from app.main import app
 client = TestClient(app, follow_redirects=False)
 
 
-@pytest.mark.parametrize("path", ["/sites", "/editor/new", "/editor/12", "/curl-tester"])
+@pytest.mark.parametrize("path", ["/sites", "/editor/new", "/editor/12", "/curl-tester", "/audit-logs"])
 def test_pages_served(path):
     r = client.get(path)
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")

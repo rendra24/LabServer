@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="id" class="scheme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit Logs · Dashboard Server</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="min-h-screen">
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-sky-600 focus:px-3 focus:py-2">Lewati ke konten</a>
+  <header class="border-b border-slate-800 bg-slate-900">
+    <nav aria-label="Navigasi utama" class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
+      <span class="font-mono text-sm font-semibold tracking-wide text-sky-400">dashboard-server</span>
+      <a href="/sites" class="flex min-h-11 items-center border-b-2 border-transparent px-1 text-sm font-medium text-slate-300 hover:text-white">Sites</a>
+      <a href="/curl-tester" class="flex min-h-11 items-center border-b-2 border-transparent px-1 text-sm font-medium text-slate-300 hover:text-white">Curl Tester</a>
+      <a href="/audit-logs" aria-current="page" class="flex min-h-11 items-center border-b-2 border-sky-400 px-1 text-sm font-medium">Audit Logs</a>
+      <span role="status" class="ml-auto flex items-center gap-2 text-xs text-slate-300">
+        <span id="api-dot" class="size-2 rounded-full bg-slate-500" aria-hidden="true"></span>
+        <span id="api-label">Memeriksa API…</span>
+      </span>
+    </nav>
+  </header>
+
+  <main id="main" class="mx-auto max-w-6xl px-4 py-6">
+    <h1 class="mb-4 text-xl font-semibold">Audit &amp; Log Riwayat</h1>
+    <div id="error" role="alert" hidden class="mb-4 rounded-md border border-red-500 bg-red-950 px-4 py-3 text-sm text-red-100"></div>
+    <p id="status" class="sr-only" aria-live="polite"></p>
+
+    <form id="filters" class="mb-4 flex flex-wrap items-end gap-3" aria-label="Filter riwayat">
+      <div>
+        <label for="f-action" class="mb-1 block text-sm text-slate-300">Tipe aksi</label>
+        <select id="f-action" class="field w-52">
+          <option value="">Semua</option>
+          <option>NGINX_TEST</option>
+          <option>NGINX_RELOAD</option>
+          <option>CONFIG_SAVE</option>
+          <option>SYMLINK_TOGGLE</option>
+          <option>CURL_TEST</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-status" class="mb-1 block text-sm text-slate-300">Status</label>
+        <select id="f-status" class="field w-40">
+          <option value="">Semua</option>
+          <option value="true">Sukses</option>
+          <option value="false">Gagal</option>
+        </select>
+      </div>
+      <button type="button" id="refresh" class="btn">Muat Ulang</button>
+    </form>
+
+    <div id="empty" hidden class="rounded-lg border border-dashed border-slate-700 px-6 py-16 text-center text-slate-300"></div>
+
+    <div id="table-wrap" class="overflow-x-auto rounded-lg border border-slate-800">
+      <table class="w-full min-w-[48rem] text-left text-sm">
+        <caption class="sr-only">Riwayat aktivitas sistem</caption>
+        <thead class="bg-slate-900 text-xs uppercase tracking-wide text-slate-400">
+          <tr>
+            <th scope="col" class="px-4 py-3">Waktu</th>
+            <th scope="col" class="px-4 py-3">Aksi</th>
+            <th scope="col" class="px-4 py-3">Perintah</th>
+            <th scope="col" class="px-4 py-3">Status</th>
+            <th scope="col" class="px-4 py-3">Output</th>
+          </tr>
+        </thead>
+        <tbody id="rows" class="divide-y divide-slate-800"></tbody>
+      </table>
+    </div>
+
+    <nav id="pager" aria-label="Paginasi" class="mt-4 flex items-center justify-between gap-3">
+      <p id="range" class="text-sm text-slate-300"></p>
+      <div class="flex gap-2">
+        <button id="prev" type="button" class="btn">Sebelumnya</button>
+        <button id="next" type="button" class="btn">Berikutnya</button>
+      </div>
+    </nav>
+  </main>
+
+  <dialog id="detail" aria-labelledby="detail-title" class="m-auto w-[min(48rem,calc(100vw-2rem))] rounded-lg border border-slate-600 bg-slate-900 p-6 text-slate-100 backdrop:bg-black/60">
+    <h2 id="detail-title" class="mb-1 text-lg font-semibold">Output Lengkap</h2>
+    <p id="detail-meta" class="mb-3 text-xs text-slate-400"></p>
+    <p class="mb-1 text-xs text-slate-400">Perintah</p>
+    <pre id="detail-cmd" class="mb-3 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-md bg-black p-3 font-mono text-xs"></pre>
+    <p class="mb-1 text-xs text-slate-400">Output</p>
+    <pre id="detail-out" tabindex="0" class="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all rounded-md bg-black p-3 font-mono text-xs"></pre>
+    <form method="dialog" class="mt-4 flex justify-end"><button class="btn">Tutup</button></form>
+  </dialog>
+
+  <script type="module" src="/static/audit.js"></script>
+</body>
+</html>

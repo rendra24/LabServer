@@ -19,7 +19,9 @@ cd backend
 .venv/bin/pytest                          # TEST_DATABASE_URL dikosongkan ulang oleh tes!
 .venv/bin/ruff check .
 ```
-Health check: `GET /api/health`.
+Health check: `GET /api/health`. Halaman: `/sites`, `/editor/:id`, `/curl-tester`, `/audit-logs`.
+
+Di mesin non-Debian (mis. macOS) perintah `sudo nginx -t` / `systemctl` tidak ada; tes memakai mock, dan untuk dev bisa menunjuk skrip pengganti lewat `SUDO_BIN`, `NGINX_BIN`, `SYSTEMCTL_BIN` (lihat `.env.example`). Port Curl Tester dibatasi `CURL_ALLOWED_PORTS`.
 
 ## Frontend
 HTML/JS statis di `frontend/`, disajikan oleh FastAPI (`/sites`, `/editor/:id`). Editor: Ace dari CDN jsdelivr. CSS Tailwind (CLI standalone, `brew install tailwindcss`) di-commit; bangun ulang setelah mengubah kelas:
