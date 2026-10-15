@@ -1,30 +1,8 @@
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.database import get_engine
-from app.deps import get_file_service
-from app.main import app
-from app.services.file_service import FileService
-
 CONF = "server {\n    listen 80;\n    server_name app.local;\n}\n"
-
-
-@pytest.fixture
-def fs(tmp_path):
-    av, en = tmp_path / "available", tmp_path / "enabled"
-    av.mkdir()
-    en.mkdir()
-    return FileService(av, en)
-
-
-@pytest.fixture
-def client(migrated_engine, fs):
-    app.dependency_overrides[get_engine] = lambda: migrated_engine
-    app.dependency_overrides[get_file_service] = lambda: fs
-    yield TestClient(app, raise_server_exceptions=False)
-    app.dependency_overrides.clear()
 
 
 def _create(client, filename="app.local", content=CONF, domain="app.local"):

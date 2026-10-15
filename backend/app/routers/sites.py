@@ -15,11 +15,20 @@ from app.schemas import (
     SiteResponse,
     SiteUpdate,
 )
+from app.services import audit_service
 from app.services.file_service import FileService, parse_server_name
 
 router = APIRouter(prefix="/api/v1/sites", tags=["sites"])
 
 _DOMAIN_RE = re.compile(DOMAIN_PATTERN)
+
+
+def _audit_save(db: DbSession, fs: FileService, site: Site, op: str) -> None:
+    done = {"create": "created", "update": "updated", "delete": "deleted"}[op]
+    audit_service.record(
+        db, site.id, audit_service.CONFIG_SAVE, f"{op} {fs.available / site.filename}",
+        f"config {done}",
+    )
 
 
 def _now() -> datetime:
@@ -104,6 +113,7 @@ def create_site(body: SiteCreate, db: DbSession, fs: Files):
             site.domain_name = body.domain_name
             site.is_enabled = False
         db.flush()
+        _audit_save(db, fs, site, "create")
         db.commit()
     except BaseException:
         db.rollback()
@@ -132,6 +142,7 @@ def update_site(site_id: int, body: SiteUpdate, db: DbSession, fs: Files):
         if body.domain_name is not None:
             site.domain_name = body.domain_name
         site.updated_at = _now()
+        _audit_save(db, fs, site, "update")
         db.commit()
     except BaseException:
         db.rollback()
@@ -148,6 +159,7 @@ def delete_site(site_id: int, db: DbSession, fs: Files):
     old = fs.read(name) if has_file else None
     was_enabled = has_file and fs.is_enabled(name)
     try:
+        _audit_save(db, fs, site, "delete")
         db.delete(site)
         db.flush()
         if has_file:
@@ -172,6 +184,14 @@ def toggle_site_status(site_id: int, db: DbSession, fs: Files):
     (fs.enable if target else fs.disable)(site.filename)
     try:
         site.is_enabled = target
+        link, src = fs.enabled / site.filename, fs.available / site.filename
+        audit_service.record(
+            db,
+            site.id,
+            audit_service.SYMLINK_TOGGLE,
+            f"ln -s {src} {link}" if target else f"rm {link}",
+            "symlink enabled" if target else "symlink disabled",
+        )
         db.commit()
     except BaseException:
         db.rollback()

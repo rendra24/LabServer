@@ -33,7 +33,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 2.1
 - [x] **2.3** Bangun REST API CRUD untuk manajemen situs (daftar situs, detail konfigurasi, buat/edit berkas, hapus berkas, dan toggle status symlink).
   - *Dependensi:* Task 2.1, Task 2.2
-- [ ] **2.4** Implementasikan pencatatan otomatis ke tabel `audit_logs` setiap kali terjadi pembuatan, modifikasi berkas, atau perubahan status symlink.
+- [x] **2.4** Implementasikan pencatatan otomatis ke tabel `audit_logs` setiap kali terjadi pembuatan, modifikasi berkas, atau perubahan status symlink.
   - *Dependensi:* Task 2.3
 - [ ] **2.5** Bangun tampilan antarmuka web daftar situs menggunakan Tailwind CSS (menampilkan nama berkas, domain utama, dan status toggle aktif/nonaktif).
   - *Dependensi:* Task 2.3

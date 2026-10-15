@@ -5,7 +5,13 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from dotenv import dotenv_values
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
+
+from app.database import get_engine  # noqa: E402
+from app.deps import get_file_service  # noqa: E402
+from app.main import app  # noqa: E402
+from app.services.file_service import FileService  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -41,3 +47,19 @@ def test_engine():
 def migrated_engine(alembic_cfg, test_engine):
     command.upgrade(alembic_cfg, "head")
     return test_engine
+
+
+@pytest.fixture
+def fs(tmp_path):
+    av, en = tmp_path / "available", tmp_path / "enabled"
+    av.mkdir()
+    en.mkdir()
+    return FileService(av, en)
+
+
+@pytest.fixture
+def client(migrated_engine, fs):
+    app.dependency_overrides[get_engine] = lambda: migrated_engine
+    app.dependency_overrides[get_file_service] = lambda: fs
+    yield TestClient(app, raise_server_exceptions=False)
+    app.dependency_overrides.clear()
