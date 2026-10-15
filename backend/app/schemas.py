@@ -150,3 +150,19 @@ class TestProfileResponse(BaseModel):
     port: int
     custom_headers: dict[str, str] | None
     updated_at: datetime
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    site_id: int | None
+    site_filename: str | None
+    action_type: str
+    command_executed: str
+    execution_output: str | None
+    is_success: bool
+    created_at: datetime
+
+
+class AuditLogList(BaseModel):
+    items: list[AuditLogResponse]
+    total: int

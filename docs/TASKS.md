@@ -64,7 +64,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 3.5
 - [x] **3.7** Integrasikan penampil hasil curl tester (HTTP Status Code, TTFB/latensi, response headers, status SSL) dan simpan hasil eksekusi ke `audit_logs`.
   - *Dependensi:* Task 3.6
-- [ ] **3.8** *(ditambahkan 2026-10-16, atas permintaan user; lihat DECISIONS.md)* Bangun endpoint `GET /api/v1/audit-logs` (filter `action_type`, `site_id`, `is_success`; paginasi `limit`/`offset`; terbaru dulu; read-only).
+- [x] **3.8** *(ditambahkan 2026-10-16, atas permintaan user; lihat DECISIONS.md)* Bangun endpoint `GET /api/v1/audit-logs` (filter `action_type`, `site_id`, `is_success`; paginasi `limit`/`offset`; terbaru dulu; read-only).
   - *Dependensi:* Task 2.4, Task 3.7
 - [ ] **3.9** *(ditambahkan 2026-10-16)* Bangun halaman `/audit-logs` (toolbar filter, tabel riwayat, modal output lengkap, state loading/error/kosong) dan tambahkan menu Curl Tester & Audit Logs di navigasi.
   - *Dependensi:* Task 3.8
