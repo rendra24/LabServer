@@ -11,7 +11,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 - [x] **1.1** Inisialisasi struktur repositori Python (FastAPI/Flask), modul virtual environment, file dependency (`requirements.txt`), serta pembacaan konfigurasi environment variable (`.env`).
 - [x] **1.2** Buat migrasi skema database PostgreSQL untuk tabel `sites`, `test_profiles`, dan `audit_logs` sesuai kamus data.
   - *Dependensi:* Task 1.1
-- [ ] **1.3** Eksekusi migrasi dan pasang data awalan (*seeding*) pada tabel `sites`, `test_profiles`, dan `audit_logs`.
+- [x] **1.3** Eksekusi migrasi dan pasang data awalan (*seeding*) pada tabel `sites`, `test_profiles`, dan `audit_logs`.
   - *Dependensi:* Task 1.2
 - [ ] **1.4** Siapkan template konfigurasi Nginx reverse proxy untuk membungkus dashboard (`:8000`) dengan proteksi `auth_basic` (HTTP Basic Auth) dan blok `allow`/`deny` (IP Whitelist).
   - *Dependensi:* Task 1.1
