@@ -24,6 +24,7 @@ Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERM
 | 16 | PRD/FRONTEND: "Monaco atau Ace"; Monaco tidak punya mode sintaks Nginx bawaan | Ace 1.36.5 (mode `nginx` bawaan) dari CDN jsdelivr, versi dikunci | Highlight Nginx tanpa menulis tokenizer sendiri. Disetujui pada keputusan #14 (CDN). |
 | 17 | Pembuatan berkas yang sudah ada: BACKEND hanya mendaftar 400/404/422/500 | `400 FILE_EXISTS` | Tetap dalam daftar kode BACKEND. |
 | 18 | FRONTEND meminta tombol "Test All Nginx Syntax" dan menu Curl Tester/Audit Logs di navigasi | Ditambahkan saat halaman/endpoint-nya ada (Sprint 3). Halaman `/audit-logs` dan endpoint `GET /api/v1/audit-logs` tidak ada di task TASKS.md mana pun; diusulkan masuk Sprint 3 (lihat Usulan). | Tidak membuat link mati. |
+| 19 | TASKS.md tidak punya task untuk halaman `/audit-logs` dan endpoint `GET /api/v1/audit-logs`, padahal PRD Core Feature 4 dan FRONTEND/BACKEND mendefinisikannya | Ditambahkan sebagai task 3.8 (endpoint) dan 3.9 (halaman) di Sprint 3. Filter `is_success` ditambahkan di endpoint untuk filter status di FRONTEND. | Diminta user 2026-10-16. Mengisi celah TASKS, bukan fitur baru di luar PRD. |
 
 ## Asumsi
 - Python 3.11 (min. BACKEND), SQLAlchemy 2.x + psycopg 3, Alembic. Dependensi dev: pytest, httpx (TestClient), ruff (linter). Versi dipin di `backend/requirements*.txt`.
@@ -38,4 +39,4 @@ Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERM
 - Docs OpenAPI (`/docs`) dimatikan: backend internal, kurangi permukaan.
 
 ## Usulan (TIDAK diimplementasikan)
-- Tambahkan ke TASKS.md: task halaman `/audit-logs` + endpoint `GET /api/v1/audit-logs` (PRD Core Feature 4 menuntut riwayat bisa dilihat; saat ini hanya tertulis ke DB).
+- (kosong)
