@@ -37,7 +37,7 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
   - *Dependensi:* Task 2.3
 - [x] **2.5** Bangun tampilan antarmuka web daftar situs menggunakan Tailwind CSS (menampilkan nama berkas, domain utama, dan status toggle aktif/nonaktif).
   - *Dependensi:* Task 2.3
-- [ ] **2.6** Integrasikan raw text code editor (Monaco Editor / Ace Editor) dengan syntax highlighting Nginx pada halaman editor konfigurasi.
+- [x] **2.6** Integrasikan raw text code editor (Monaco Editor / Ace Editor) dengan syntax highlighting Nginx pada halaman editor konfigurasi.
   - *Dependensi:* Task 2.5
 - [ ] **2.7** Hubungkan aksi simpan editor ke endpoint update konfigurasi backend dan tampilkan feedback visual (status tersimpan/gagal).
   - *Dependensi:* Task 2.4, Task 2.6

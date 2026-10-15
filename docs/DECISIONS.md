@@ -21,14 +21,21 @@ Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERM
 | 13 | Baris `sites` tanpa file di disk (seed) | Baris dipertahankan, detail → 404; file baru di disk diimpor saat list. | Disetujui user 2026-10-15. |
 | 14 | Tailwind "terkompilasi" tanpa library eksternal; Monaco via CDN/vendor | Tailwind standalone CLI (tanpa Node), CSS hasil build di-commit; Monaco dari CDN jsdelivr versi dikunci. | Disetujui user 2026-10-15. |
 | 15 | PRD tidak punya bagian "Non-Goals" | Backlog di TASKS.md dianggap Non-Goals. | Satu-satunya daftar penundaan. |
+| 16 | PRD/FRONTEND: "Monaco atau Ace"; Monaco tidak punya mode sintaks Nginx bawaan | Ace 1.36.5 (mode `nginx` bawaan) dari CDN jsdelivr, versi dikunci | Highlight Nginx tanpa menulis tokenizer sendiri. Disetujui pada keputusan #14 (CDN). |
+| 17 | Pembuatan berkas yang sudah ada: BACKEND hanya mendaftar 400/404/422/500 | `400 FILE_EXISTS` | Tetap dalam daftar kode BACKEND. |
+| 18 | FRONTEND meminta tombol "Test All Nginx Syntax" dan menu Curl Tester/Audit Logs di navigasi | Ditambahkan saat halaman/endpoint-nya ada (Sprint 3). Halaman `/audit-logs` dan endpoint `GET /api/v1/audit-logs` tidak ada di task TASKS.md mana pun; diusulkan masuk Sprint 3 (lihat Usulan). | Tidak membuat link mati. |
 
 ## Asumsi
 - Python 3.11 (min. BACKEND), SQLAlchemy 2.x + psycopg 3, Alembic. Dependensi dev: pytest, httpx (TestClient), ruff (linter). Versi dipin di `backend/requirements*.txt`.
 - Nama file migrasi `YYYYMMDDHHMM_<deskripsi>.py` (Alembic `file_template`).
 - DB dev lokal: `dashboard_server`; DB tes: `dashboard_server_test` (dikosongkan oleh tes migrasi).
 - `backend/.env` untuk dev lokal (di-gitignore); contoh di `.env.example`.
+- Kolom respons `file_exists` ditambahkan di SiteResponse (tidak ada di BACKEND) untuk menandai baris tanpa berkas (keputusan #13).
+- Impor otomatis: domain diambil dari `server_name` pertama; jika tidak valid, dipakai nama berkas yang disanitasi.
+- Batas isi konfigurasi 1 MiB; karakter null ditolak.
+- Audit hanya mencatat operasi mutasi yang berhasil (satu transaksi dengan operasinya).
 - Sudoers memakai `(root)` bukan `(ALL)` sebagai run-as user: perintah sama, hak lebih sempit.
 - Docs OpenAPI (`/docs`) dimatikan: backend internal, kurangi permukaan.
 
 ## Usulan (TIDAK diimplementasikan)
-- (kosong)
+- Tambahkan ke TASKS.md: task halaman `/audit-logs` + endpoint `GET /api/v1/audit-logs` (PRD Core Feature 4 menuntut riwayat bisa dilihat; saat ini hanya tertulis ke DB).
