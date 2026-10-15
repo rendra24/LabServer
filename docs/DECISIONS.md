@@ -1,0 +1,33 @@
+# DECISIONS — Dashboard Server
+
+Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERMISSIONS > TASKS > README.
+
+## Konflik dokumen (2026-10-15)
+
+| # | Konflik | Keputusan | Alasan |
+|---|---|---|---|
+| 1 | Path API: BACKEND `/api/v1/nginx/test`, `/nginx/reload`, `/curl/test`; FRONTEND `/api/diagnostic/test-syntax`, `/api/curl/execute` (tanpa v1); TASKS `/api/health` | Ikut BACKEND (`/api/v1/...`). Health check tetap `/api/health` (tanpa versi). Frontend disesuaikan. | BACKEND prioritas lebih tinggi dari FRONTEND/TASKS; health bukan bagian API bisnis. |
+| 2 | PERMISSIONS punya role Auditor/Viewer; PRD & ROLES: satu admin, RBAC di Backlog | Tidak ada role Viewer. Satu admin. | PRD menang; RBAC = Backlog = tidak dikerjakan. |
+| 3 | Reload dengan sintaks gagal: BACKEND 400, PERMISSIONS 422 | 400 | BACKEND prioritas lebih tinggi. |
+| 4 | Port curl: BACKEND/FRONTEND 1–65535; PERMISSIONS allowlist 80/443/8080/8443/8000 | Allowlist 80, 443, 8080, 8443, 8000, bisa diubah lewat env (`CURL_ALLOWED_PORTS`). Skema DB tetap 1–65535. | Disetujui user 2026-10-15. Lebih ketat, cegah SSRF ke mis. Postgres :5432. Menyimpang dari BACKEND secara sadar. |
+| 5 | `action_type`: DATABASE `NGINX_TEST/NGINX_RELOAD/CONFIG_SAVE/CURL_TEST`; FRONTEND `RELOAD/FILE_SAVE/SYMLINK_TOGGLE` | Nilai DATABASE + tambahan `SYMLINK_TOGGLE`. Filter UI mengikuti. | DATABASE menang; kolom VARCHAR tanpa CHECK sehingga tidak perlu ubah skema; TASKS 2.4 mewajibkan toggle tercatat. |
+| 6 | Nama user sudoers: `dashboard_app` / `dashboard-user` / `dashboard-runner` | `dashboard_app` | BACKEND menang. |
+| 7 | Perintah curl BACKEND `-I -X GET` + `-o /dev/null` tidak konsisten (HEAD vs GET, tanpa header keluaran) | GET biasa, `-D -` (header), `-o /dev/null`, `-w` pipa, `--max-time 5`, timeout subprocess 15 dtk | Maksud BACKEND (status, TTFB, header) tidak tercapai dengan flag aslinya; `--max-time` dari PERMISSIONS. |
+| 8 | Regex nama file: BACKEND `^[a-zA-Z0-9._-]+$`; FRONTEND huruf kecil, min 3 | Ikut BACKEND; UI memakai aturan sama. Server juga menolak `.`, `..`, nama berawalan titik. | BACKEND menang; hindari UI≠server. |
+| 9 | `resolve_ip`: FRONTEND IPv4 saja; BACKEND IPv4/IPv6; DATABASE NOT NULL | IPv4/IPv6 via `ipaddress`. Opsional pada request curl, wajib pada profil. | BACKEND/DATABASE menang. |
+| 10 | Rute UI tanpa bundler | FastAPI menyajikan halaman HTML statis per rute; `/api/*` JSON. | Paling sederhana; origin sama. |
+| 11 | Seed: DATABASE punya seed SQL; TASKS 1.3 "eksekusi migrasi dan pasang seed" | Seed = skrip terpisah, idempoten (`python -m app.seed`), bukan migrasi. | Migrasi tidak boleh membawa data contoh ke produksi. |
+| 12 | Direktori Nginx hardcode `/etc/nginx/...`, mesin dev macOS | Default tetap `/etc/nginx/...`; override lewat env `NGINX_AVAILABLE_DIR`/`NGINX_ENABLED_DIR`. | Dokumen tidak melarang; perlu untuk tes. |
+| 13 | Baris `sites` tanpa file di disk (seed) | Baris dipertahankan, detail → 404; file baru di disk diimpor saat list. | Disetujui user 2026-10-15. |
+| 14 | Tailwind "terkompilasi" tanpa library eksternal; Monaco via CDN/vendor | Tailwind standalone CLI (tanpa Node), CSS hasil build di-commit; Monaco dari CDN jsdelivr versi dikunci. | Disetujui user 2026-10-15. |
+| 15 | PRD tidak punya bagian "Non-Goals" | Backlog di TASKS.md dianggap Non-Goals. | Satu-satunya daftar penundaan. |
+
+## Asumsi
+- Python 3.11 (min. BACKEND), SQLAlchemy 2.x + psycopg 3, Alembic. Dependensi dev: pytest, httpx (TestClient), ruff (linter). Versi dipin di `backend/requirements*.txt`.
+- Nama file migrasi `YYYYMMDDHHMM_<deskripsi>.py` (Alembic `file_template`).
+- DB dev lokal: `dashboard_server`; DB tes: `dashboard_server_test` (dikosongkan oleh tes migrasi).
+- `backend/.env` untuk dev lokal (di-gitignore); contoh di `.env.example`.
+- Docs OpenAPI (`/docs`) dimatikan: backend internal, kurangi permukaan.
+
+## Usulan (TIDAK diimplementasikan)
+- (kosong)
