@@ -20,7 +20,11 @@ if command -v nginx >/dev/null; then
 else
   printf '#!/bin/bash\necho "nginx tidak terpasang (stub dev): ok" >&2\n' > "$data/bin/nginx"
 fi
-printf '#!/bin/bash\necho "stub dev: reload tidak menyentuh nginx sungguhan" >&2\n' > "$data/bin/systemctl"
+if command -v nginx >/dev/null; then  # reload dev sungguhan terhadap daemon dev (di bawah)
+  printf '#!/bin/bash\n[ "$1 $2" = "reload nginx" ] && exec %s -s reload -c %s -p %s\nexit 1\n' "$(command -v nginx)" "$data/nginx.conf" "$data/run" > "$data/bin/systemctl"
+else
+  printf '#!/bin/bash\necho "nginx tidak terpasang (stub dev)" >&2\n' > "$data/bin/systemctl"
+fi
 chmod +x "$data"/bin/*
 
 # Berkas contoh untuk baris seed, supaya tombol Edit/Clone muncul (baris tanpa berkas tidak punya aksi itu)
@@ -38,5 +42,16 @@ cd "$root/backend"
 .venv/bin/python -m app.seed
 export NGINX_AVAILABLE_DIR="$data/sites-available" NGINX_ENABLED_DIR="$data/sites-enabled"
 export SUDO_BIN="$data/bin/sudo" NGINX_BIN="$data/bin/nginx" SYSTEMCTL_BIN="$data/bin/systemctl"
+
+# Daemon nginx dev: tanpa ini vhost yang dibuat tidak punya server yang mendengarkan portnya
+if command -v nginx >/dev/null; then
+  "$data/bin/nginx" >/dev/null 2>&1 || echo "PERINGATAN: konfigurasi dev tidak valid; daemon nginx tidak dijalankan"
+  if nginx -c "$data/nginx.conf" -p "$data/run" 2>"$data/run/start.log"; then
+    trap 'nginx -c "$data/nginx.conf" -p "$data/run" -s stop 2>/dev/null' EXIT
+    echo "Nginx dev berjalan (konfigurasi: $data/nginx.conf). Vhost dengan 'listen 8080;' bisa dites di http://<domain>:8080"
+  else
+    echo "PERINGATAN: nginx dev gagal start (port dipakai proses lain?): $(tail -1 "$data/run/start.log")"
+  fi
+fi
 echo "Dashboard: http://127.0.0.1:8000/sites  (Ctrl+C untuk berhenti)"
-exec .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
