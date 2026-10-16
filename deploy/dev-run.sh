@@ -23,6 +23,16 @@ fi
 printf '#!/bin/bash\necho "stub dev: reload tidak menyentuh nginx sungguhan" >&2\n' > "$data/bin/systemctl"
 chmod +x "$data"/bin/*
 
+# Berkas contoh untuk baris seed, supaya tombol Edit/Clone muncul (baris tanpa berkas tidak punya aksi itu)
+for name in default app-php83.local legacy-php74.local; do
+  f="$data/sites-available/$name"
+  [ -e "$f" ] || printf 'server {\n    listen 8080;\n    server_name %s;\n    default_type text/plain;\n    location / { return 200 "halo dari %s\\n"; }\n}\n' \
+    "$([ "$name" = default ] && echo localhost || echo "$name")" "$name" > "$f"
+done
+for name in default app-php83.local; do  # sesuai seed: dua situs pertama aktif
+  [ -e "$data/sites-enabled/$name" ] || ln -s "$data/sites-available/$name" "$data/sites-enabled/$name"
+done
+
 cd "$root/backend"
 .venv/bin/alembic upgrade head
 .venv/bin/python -m app.seed
