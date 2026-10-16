@@ -94,6 +94,12 @@ Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Serve
 
 ---
 
+## Tambahan di luar rencana awal (permintaan user)
+
+- [x] **5.1** *(2026-10-16)* Clone vhost: tombol "Clone" di `/sites` dan di editor membuka `/editor/new?from=<id>` dengan isi disalin (nama berkas dan domain dikosongkan, hasil clone nonaktif); tombol "Ganti domain lama dengan domain baru di isi" mengganti semua kemunculan domain sumber (server_name, root, nama log). Hanya frontend; memakai endpoint yang sudah ada. Tes: `node --test frontend/test/`.
+
+---
+
 ## Backlog (pasca-MVP)
 
 Hal-hal berikut sengaja ditunda dari cakupan Tahap 1 sesuai batasan PRD:

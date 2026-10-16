@@ -42,9 +42,18 @@
       <div class="flex flex-wrap items-start gap-2 md:justify-end md:pt-6">
         <span id="state" class="badge bg-emerald-900 text-emerald-100">Tersimpan</span>
         <button id="save" type="submit" class="btn btn-primary">Simpan Berkas</button>
+        <a id="clone-link" href="#" hidden class="btn">Clone</a>
         <a href="/sites" class="btn">Kembali ke Daftar</a>
       </div>
     </form>
+
+    <section id="clone-bar" hidden aria-label="Clone vhost" class="mb-4 rounded-lg border border-sky-800 bg-sky-950 p-4 text-sm">
+      <p id="clone-info" class="mb-2"></p>
+      <div class="flex flex-wrap items-center gap-3">
+        <button id="clone-replace" type="button" class="btn">Ganti domain lama dengan domain baru di isi</button>
+        <span id="clone-result" role="status" class="text-slate-200"></span>
+      </div>
+    </section>
 
     <div class="grid gap-4 lg:grid-cols-[3fr_2fr]">
       <div>

@@ -18,6 +18,7 @@ cd backend
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 .venv/bin/pytest                          # TEST_DATABASE_URL dikosongkan ulang oleh tes!
 .venv/bin/ruff check .
+node --test frontend/test/                # tes logika frontend (butuh Node ≥ 20)
 ```
 Health check: `GET /api/health`. Halaman: `/sites`, `/editor/:id`, `/curl-tester`, `/audit-logs`.
 

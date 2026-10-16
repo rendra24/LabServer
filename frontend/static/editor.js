@@ -1,4 +1,5 @@
 import { DOMAIN_RE, api, announce, clearError, showError, validFilename } from "/static/common.js";
+import { replaceDomain } from "/static/clone.js";
 import { appendLog, busy, runReload, runSyntaxTest } from "/static/diag.js";
 
 const $ = (id) => document.getElementById(id);
@@ -8,6 +9,7 @@ let siteId = isNew ? null : Number(route?.[1]);
 let baseline = "";
 let baselineDomain = "";
 let editor = null;
+let cloneSource = null; // {filename, domain} bila halaman ini hasil clone
 let syntaxValid = false; // hasil nginx -t terakhir, valid hanya untuk isi yang sudah tersimpan
 
 function content() {
@@ -52,6 +54,47 @@ function initEditor() {
   return true;
 }
 
+function showCloneLink() {
+  const link = $("clone-link");
+  link.href = `/editor/new?from=${siteId}`;
+  link.hidden = false;
+}
+
+async function loadClone(fromId) {
+  setBaseline("", "");
+  try {
+    const src = await api(`/api/v1/sites/${fromId}`);
+    cloneSource = { filename: src.filename, domain: src.domain_name };
+    editor.setValue(src.content, -1); // baseline kosong: halaman langsung "Belum Disimpan"
+    $("title").textContent = `Clone dari ${src.filename}`;
+    $("clone-info").textContent = `Isi disalin dari ${src.filename} (domain ${src.domain_name}). Isi nama berkas dan domain baru, lalu ganti domain lama. Port dan path lain tetap perlu Anda sesuaikan; dua vhost dengan server_name yang sama akan memicu peringatan Nginx.`;
+    $("clone-bar").hidden = false;
+    $("domain").focus();
+    announce(`Isi ${src.filename} disalin. Silakan ubah domain.`);
+  } catch (e) {
+    showError(`Tidak dapat memuat sumber clone: ${e.message}`);
+  }
+}
+
+function applyDomainReplace() {
+  const result = $("clone-result");
+  const domain = $("domain").value.trim();
+  if (fieldError("domain", domain && DOMAIN_RE.test(domain) ? "" : "Isi domain baru yang valid dulu (huruf, angka, titik, tanda hubung).")) {
+    result.textContent = "";
+    return $("domain").focus();
+  }
+  const { text, count } = replaceDomain(content(), cloneSource.domain, domain);
+  if (!count) {
+    result.textContent = `Domain lama (${cloneSource.domain}) tidak ditemukan di isi.`;
+  } else {
+    editor.setValue(text, -1);
+    result.textContent = `${count} kemunculan ${cloneSource.domain} diganti dengan ${domain}.`;
+    cloneSource.domain = domain; // klik berikutnya mengganti domain terbaru
+  }
+  if (!$("filename").value.trim() && validFilename(domain)) $("filename").value = domain;
+  announce(result.textContent);
+}
+
 function updateNote(enabled) {
   const note = $("diag-note");
   note.hidden = enabled !== false;
@@ -72,6 +115,7 @@ async function loadExisting() {
     const site = await api(`/api/v1/sites/${siteId}`);
     $("filename").value = site.filename;
     $("title").textContent = `Sunting ${site.filename}`;
+    showCloneLink();
     document.title = `${site.filename} · Dashboard Server`;
     setBaseline(site.content, site.domain_name);
     updateNote(site.is_enabled);
@@ -153,6 +197,9 @@ async function save() {
       $("filename").disabled = true;
       $("title").textContent = `Sunting ${site.filename}`;
       history.replaceState(null, "", `/editor/${site.id}`);
+      cloneSource = null;
+      $("clone-bar").hidden = true;
+      showCloneLink();
     } else {
       site = await api(`/api/v1/sites/${siteId}`, { method: "PUT", body: { content: text, domain_name: domain } });
     }
@@ -198,9 +245,12 @@ function init() {
   window.addEventListener("beforeunload", (e) => {
     if (isDirty()) e.preventDefault();
   });
+  $("clone-replace").addEventListener("click", applyDomainReplace);
   if (isNew) {
     $("title").textContent = "Berkas Konfigurasi Baru";
-    setBaseline("", "");
+    const from = Number(new URLSearchParams(location.search).get("from"));
+    if (Number.isInteger(from) && from > 0) loadClone(from);
+    else setBaseline("", "");
   } else {
     loadExisting();
   }

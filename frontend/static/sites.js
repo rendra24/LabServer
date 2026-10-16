@@ -47,6 +47,7 @@ function row(site) {
   const actions = el("div", { cls: "flex gap-2" });
   if (site.file_exists) {
     actions.append(el("a", { text: "Edit", cls: "btn", attrs: { href: `/editor/${site.id}` } }));
+    actions.append(el("a", { text: "Clone", cls: "btn", attrs: { href: `/editor/new?from=${site.id}`, "aria-label": `Clone ${site.filename}` } }));
   }
   const del = el("button", { text: "Hapus", cls: "btn btn-danger", attrs: { type: "button" } });
   del.addEventListener("click", () => remove(site));
