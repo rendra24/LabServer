@@ -1,0 +1,44 @@
+name: desktop
+on:
+  push:
+    paths: ["desktop/**", ".github/workflows/desktop.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, script: dist:mac }
+          - { os: windows-latest, script: dist:win }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: desktop/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test            # unit + tes SSH in-process (tes sshd/nginx dilewati tanpa container)
+      - run: npm run ${{ matrix.script }}
+      - name: Smoke test aplikasi hasil build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path "dist/win-unpacked/Dashboard Server.exe").Path
+          $env:ELECTRON_RUN_AS_NODE = "1"
+          & $exe -e "const r=require('./resources/app.asar/src/main/ssh'); const s=require('./resources/app.asar/src/main/store'); if(typeof r.connect!=='function'||!s.validateServer) process.exit(1); console.log('modul dalam app.asar OK')"
+          if ($LASTEXITCODE -ne 0) { throw "smoke test gagal" }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
+          $p = Start-Process $exe -PassThru; Start-Sleep 8
+          if ($p.HasExited) { throw "aplikasi langsung keluar (exit $($p.ExitCode))" }
+          Stop-Process $p
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-server-${{ runner.os }}
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe

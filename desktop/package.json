@@ -11,16 +11,73 @@
     "start": "electron .",
     "test": "node --test --test-concurrency=1 test/ test/integration/",
     "lint": "eslint .",
-    "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify"
+    "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify",
+    "build:renderer": "npm run vendor && npm run css",
+    "dist:mac": "npm run build:renderer && electron-builder --mac --publish never",
+    "dist:win": "npm run build:renderer && electron-builder --win --publish never"
   },
   "dependencies": {
-    "ace-builds": "1.45.0",
     "ssh2": "1.17.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "ace-builds": "1.45.0",
     "electron": "44.8.0",
+    "electron-builder": "26.15.3",
     "eslint": "10.13.0",
     "globals": "17.13.0"
+  },
+  "author": "Dashboard Server",
+  "build": {
+    "appId": "com.dashboardserver.desktop",
+    "productName": "Dashboard Server",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "npmRebuild": false,
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!src/renderer/input.css",
+      "!**/*.map",
+      "!**/*.md",
+      "!**/test/**",
+      "!**/.github/**",
+      "!**/*.node",
+      "!**/binding.gyp"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "identity": null
+    },
+    "dmg": {
+      "title": "Dashboard Server ${version}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
   }
 }

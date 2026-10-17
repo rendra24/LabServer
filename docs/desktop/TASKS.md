@@ -33,9 +33,10 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 **DoD:** Alur edit/tambah/clone/aktifkan/test/reload diverifikasi end-to-end di aplikasi terhadap server container (alur utama + satu kasus error).
 
 ## Sprint D4: Paket & Distribusi
-- [ ] **D4.1** `electron-builder`: macOS `.dmg` (arm64 + x64) dibangun dan dijalankan.
+- [x] **D4.1** `electron-builder`: macOS `.dmg` (arm64 + x64) dibangun dan dijalankan.
 - [ ] **D4.2** Windows `.exe` (NSIS): build (cross-build atau GitHub Actions `windows-latest`) dan uji jalan.
-- [ ] **D4.3** README desktop: instalasi, menambah server, kebutuhan izin di server (sudoers), keterbatasan (tanpa code signing).
+  - *Status 2026-10-17:* `Dashboard Server Setup 0.1.0.exe` berhasil di-cross-build dari macOS (PE32, asar berisi ssh2 + Ace). **Belum dijalankan di Windows**; workflow CI dengan smoke test sudah ditulis (`.github/workflows/desktop.yml`) tetapi belum dieksekusi.
+- [x] **D4.3** README desktop: instalasi, menambah server, kebutuhan izin di server (sudoers), keterbatasan (tanpa code signing).
 
 **DoD:** Installer macOS dan Windows tersedia dan aplikasi terbuka serta bisa connect.
 
