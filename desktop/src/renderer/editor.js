@@ -31,7 +31,7 @@ function ensureEditor() {
   ace.config.set("basePath", "vendor/ace");
   editor = ace.edit("ed-editor", {
     mode: "ace/mode/nginx",
-    theme: "ace/theme/tomorrow_night",
+    theme: document.documentElement.dataset.theme === "light" ? "ace/theme/tomorrow" : "ace/theme/tomorrow_night",
     tabSize: 4,
     useSoftTabs: true,
     showPrintMargin: false,
@@ -158,3 +158,6 @@ document.addEventListener("keydown", (e) => {
 });
 
 onShow("editor", open);
+document.addEventListener("theme-change", (e) => {
+  editor?.setTheme(e.detail === "light" ? "ace/theme/tomorrow" : "ace/theme/tomorrow_night");
+});

@@ -28,7 +28,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $exe = (Resolve-Path "dist/win-unpacked/Dashboard Server.exe").Path
+          $exe = (Resolve-Path "dist/win-unpacked/LabServer.exe").Path
           $env:ELECTRON_RUN_AS_NODE = "1"
           & $exe -e "const r=require('./resources/app.asar/src/main/ssh'); const s=require('./resources/app.asar/src/main/store'); if(typeof r.connect!=='function'||!s.validateServer) process.exit(1); console.log('modul dalam app.asar OK')"
           if ($LASTEXITCODE -ne 0) { throw "smoke test gagal" }
@@ -38,7 +38,7 @@ jobs:
           Stop-Process $p
       - uses: actions/upload-artifact@v4
         with:
-          name: dashboard-server-${{ runner.os }}
+          name: labserver-${{ runner.os }}
           path: |
             desktop/dist/*.dmg
             desktop/dist/*.exe

@@ -1,8 +1,8 @@
 {
   "name": "dashboard-server-desktop",
-  "productName": "Dashboard Server",
+  "productName": "LabServer",
   "version": "0.1.0",
-  "description": "Kelola vhost Nginx di server remote lewat SSH",
+  "description": "LabServer \u2014 ruang kerja SSH dan Nginx untuk server Anda",
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
@@ -10,6 +10,7 @@
     "prestart": "npm run vendor",
     "start": "electron .",
     "test": "node --test --test-concurrency=1 test/ test/integration/",
+    "test:ui": "electron scripts/smoke-ui.js",
     "lint": "eslint .",
     "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify",
     "build:renderer": "npm run vendor && npm run css",
@@ -27,10 +28,10 @@
     "eslint": "10.13.0",
     "globals": "17.13.0"
   },
-  "author": "Dashboard Server",
+  "author": "LabServer",
   "build": {
     "appId": "com.dashboardserver.desktop",
-    "productName": "Dashboard Server",
+    "productName": "LabServer",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -58,10 +59,11 @@
           ]
         }
       ],
-      "identity": null
+      "identity": null,
+      "icon": "build/icon.icns"
     },
     "dmg": {
-      "title": "Dashboard Server ${version}"
+      "title": "LabServer ${version}"
     },
     "win": {
       "target": [
@@ -72,7 +74,8 @@
           ]
         }
       ],
-      "signAndEditExecutable": false
+      "signExecutable": false,
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,

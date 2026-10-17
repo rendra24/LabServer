@@ -18,13 +18,13 @@ export function showError(m) {
 }
 
 export async function busy(button, label, fn) {
-  const original = button.textContent;
+  const original = [...button.childNodes];
   button.disabled = true;
   button.replaceChildren(el("span", { cls: "spinner", attrs: { "aria-hidden": "true" } }), label);
   try {
     return await fn();
   } finally {
-    button.textContent = original;
+    button.replaceChildren(...original);
     button.disabled = false;
   }
 }

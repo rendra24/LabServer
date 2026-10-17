@@ -18,3 +18,4 @@ Ekstrak ke folder `docs/` di repo proyekmu, lalu ikuti `AGENT-PROMPT.md` untuk m
 | [DECISIONS.md](DECISIONS.md) | Konflik dokumen, keputusan, asumsi, usulan selama implementasi |
 | [desktop/PRD.md](desktop/PRD.md) | PRD v3: aplikasi desktop Electron (SSH agentless) |
 | [desktop/TASKS.md](desktop/TASKS.md) | Sprint D1–D4 aplikasi desktop |
+| [desktop/PRD-MONITORING.md](desktop/PRD-MONITORING.md) | PRD v3.1: halaman Monitoring dari Prometheus (SSH tunnel) |

@@ -42,3 +42,32 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 
 ## Backlog desktop
 - Hapus berkas konfigurasi · Linux build · auto-update · code signing/notarisasi · Curl Tester & riwayat aksi lokal · beberapa sesi server paralel.
+
+---
+
+## Sprint M: Monitoring Prometheus (PRD-MONITORING.md)
+
+### M1: Akses & katalog (main process)
+- [ ] **M1.1** Klien Prometheus lewat SSH `forwardOut` (`query`, `query_range`, `targets`): timeout, batas ukuran, validasi bentuk respons, error ramah (Prometheus tidak ada, 4xx/5xx, timeout).
+- [ ] **M1.2** Katalog panel bawaan (query tetap Host + Nginx), builder rentang/step (batas 5 mnt–7 hr, ≤ ~500 titik), konfigurasi `prometheus` per server (host/port, default `127.0.0.1:9090`) di store + validasi. Tes unit.
+  - *Dependensi:* M1.1
+- [ ] **M1.3** Deteksi ketersediaan panel (job/exporter) dan IPC sempit `monitor:*` (whitelist panel, tanpa PromQL dari renderer).
+  - *Dependensi:* M1.2
+
+**DoD:** Tes terhadap Prometheus + node_exporter + nginx exporter nyata di container mengembalikan seri untuk semua panel; panel tanpa exporter terdeteksi "tidak tersedia".
+
+### M2: UI Monitoring
+- [ ] **M2.1** Bundle uPlot lokal; halaman Monitoring: kartu ringkas + grafik per panel, pilih rentang, auto-refresh, state loading/error/kosong/"tidak tersedia".
+  - *Dependensi:* M1.3
+- [ ] **M2.2** Pengaturan Prometheus per server di form server (host/port) dan tombol "Tes Prometheus".
+  - *Dependensi:* M1.2
+- [ ] **M2.3** Aksesibilitas: tabel data alternatif/ringkasan teks per grafik, kontras, fokus.
+  - *Dependensi:* M2.1
+
+**DoD:** Alur utama dan satu kasus error diverifikasi di aplikasi terhadap Prometheus di container.
+
+### M3: Panduan & verifikasi
+- [ ] **M3.1** Panduan server: instal Prometheus + node_exporter + nginx exporter (`stub_status`), contoh `prometheus.yml`, firewall; README desktop diperbarui.
+- [ ] **M3.2** Tes integrasi end-to-end (container Ubuntu dengan paket apt `prometheus`, `prometheus-node-exporter`, `prometheus-nginx-exporter`).
+
+**DoD:** Panduan diikuti di container dan menghasilkan dashboard berisi data.

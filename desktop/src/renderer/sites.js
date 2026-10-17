@@ -60,7 +60,10 @@ export async function loadSites() {
   if (!r.ok) {
     $("sites-rows").replaceChildren();
     showError(r.message);
-    if (r.code === "NOT_CONNECTED") show("servers");
+    if (r.code === "NOT_CONNECTED") {
+      app.server = null;
+      show("servers");
+    }
     return;
   }
   sites = r.data;
