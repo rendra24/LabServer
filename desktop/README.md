@@ -16,4 +16,9 @@ node scripts/dev-ssh-server.js   # SSH palsu di 127.0.0.1:2222, user deploy, pas
 ```
 Key uji dibuat di `scripts/.dev-key` (passphrase `frasa-dev`) dan `scripts/.dev-key-plain` (tanpa passphrase). Server ini hanya untuk menguji koneksi/autentikasi; belum ada Nginx di baliknya.
 
+Uji terhadap OpenSSH sungguhan (mis. container Ubuntu dengan `openssh-server`, user `deploy`, key dari `scripts/*.pub` di `authorized_keys`):
+```bash
+SSHD_PORT=2223 SSHD_PASSWORD=... SSHD_FINGERPRINT=SHA256:... SSHD_CONTAINER=<nama-container> npm test
+```
+
 Data aplikasi (profil server, fingerprint, secret terenkripsi) ada di folder userData Electron, mis. `~/Library/Application Support/Dashboard Server/`.

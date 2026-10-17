@@ -9,13 +9,13 @@ const keyFile = path.join(__dirname, ".dev-key");
 if (!fs.existsSync(keyFile)) {
   const k = utils.generateKeyPairSync("ed25519", { passphrase: "frasa-dev", cipher: "aes256-ctr", rounds: 4 });
   fs.writeFileSync(keyFile, k.private, { mode: 0o600 });
-  fs.writeFileSync(`${keyFile}.pub`, k.public);
+  fs.writeFileSync(`${keyFile}.pub`, `${k.public}\n`);
 }
 const plainFile = path.join(__dirname, ".dev-key-plain");
 if (!fs.existsSync(plainFile)) {
   const k = utils.generateKeyPairSync("ed25519");
   fs.writeFileSync(plainFile, k.private, { mode: 0o600 });
-  fs.writeFileSync(`${plainFile}.pub`, k.public);
+  fs.writeFileSync(`${plainFile}.pub`, `${k.public}\n`);
 }
 const port = Number(process.env.PORT || 2222);
 // Host key tetap antar-restart agar fingerprint yang sudah disetujui tetap valid.
