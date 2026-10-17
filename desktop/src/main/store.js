@@ -16,6 +16,8 @@ const NGINX_DEFAULTS = {
   reload: "systemctl",
 };
 
+const PROMETHEUS_DEFAULTS = { host: "127.0.0.1", port: 9090 };
+
 class ValidationError extends Error {
   constructor(errors) {
     super("Data server tidak valid.");
@@ -60,8 +62,21 @@ function validateServer(input) {
     else nginx.reload = reload;
   }
 
+  const prometheus = { ...PROMETHEUS_DEFAULTS };
+  const promHost = input.prometheus?.host;
+  if (promHost !== undefined && promHost !== "") {
+    if (typeof promHost === "string" && (net.isIP(promHost.trim()) || HOSTNAME_RE.test(promHost.trim()))) prometheus.host = promHost.trim();
+    else errors["prometheus.host"] = "Host Prometheus harus hostname atau alamat IP yang valid.";
+  }
+  const promPort = input.prometheus?.port;
+  if (promPort !== undefined && promPort !== "") {
+    const n = Number(promPort);
+    if (Number.isInteger(n) && n >= 1 && n <= 65535) prometheus.port = n;
+    else errors["prometheus.port"] = "Port Prometheus harus 1–65535.";
+  }
+
   if (Object.keys(errors).length) throw new ValidationError(errors);
-  const profile = { id: input.id, name, host, port, username, auth: input.auth, nginx };
+  const profile = { id: input.id, name, host, port, username, auth: input.auth, nginx, prometheus };
   if (keyPath) profile.keyPath = keyPath;
   return profile;
 }
@@ -143,4 +158,4 @@ function createStore(dir, cryptoImpl) {
   };
 }
 
-module.exports = { createStore, validateServer, ValidationError, NGINX_DEFAULTS, RELOAD_METHODS };
+module.exports = { createStore, validateServer, ValidationError, NGINX_DEFAULTS, PROMETHEUS_DEFAULTS, RELOAD_METHODS };

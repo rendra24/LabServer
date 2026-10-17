@@ -49,7 +49,7 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 
 ### M1: Akses & katalog (main process)
 - [x] **M1.1** Klien Prometheus lewat SSH `forwardOut` (`query`, `query_range`, `targets`): timeout, batas ukuran, validasi bentuk respons, error ramah (Prometheus tidak ada, 4xx/5xx, timeout).
-- [ ] **M1.2** Katalog panel bawaan (query tetap Host + Nginx), builder rentang/step (batas 5 mnt–7 hr, ≤ ~500 titik), konfigurasi `prometheus` per server (host/port, default `127.0.0.1:9090`) di store + validasi. Tes unit.
+- [x] **M1.2** Katalog panel bawaan (query tetap Host + Nginx), builder rentang/step (batas 5 mnt–7 hr, ≤ ~500 titik), konfigurasi `prometheus` per server (host/port, default `127.0.0.1:9090`) di store + validasi. Tes unit.
   - *Dependensi:* M1.1
 - [ ] **M1.3** Deteksi ketersediaan panel (job/exporter) dan IPC sempit `monitor:*` (whitelist panel, tanpa PromQL dari renderer).
   - *Dependensi:* M1.2
