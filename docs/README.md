@@ -16,3 +16,5 @@ Ekstrak ke folder `docs/` di repo proyekmu, lalu ikuti `AGENT-PROMPT.md` untuk m
 | [TASKS.md](TASKS.md) | Sprint & task terperinci, dependensi, DoD (dari PRD v2) |
 | [OPERATIONS.md](OPERATIONS.md) | Panduan operasional: sudoers, gateway, htpasswd, izin direktori, troubleshooting (Task 4.5) |
 | [DECISIONS.md](DECISIONS.md) | Konflik dokumen, keputusan, asumsi, usulan selama implementasi |
+| [desktop/PRD.md](desktop/PRD.md) | PRD v3: aplikasi desktop Electron (SSH agentless) |
+| [desktop/TASKS.md](desktop/TASKS.md) | Sprint D1–D4 aplikasi desktop |
