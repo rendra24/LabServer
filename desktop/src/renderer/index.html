@@ -8,10 +8,87 @@
   <link rel="stylesheet" href="app.css">
 </head>
 <body class="min-h-screen">
-  <main class="p-6">
-    <h1 class="text-xl font-semibold">Dashboard Server</h1>
-    <p id="version" class="text-sm text-slate-400"></p>
+  <header class="flex items-center gap-4 border-b border-slate-800 bg-slate-900 px-6 py-3">
+    <span class="font-mono text-sm font-semibold tracking-wide text-sky-400">dashboard-server</span>
+    <span id="version" class="text-xs text-slate-400"></span>
+  </header>
+
+  <main class="mx-auto max-w-5xl p-6">
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <h1 class="text-xl font-semibold">Server</h1>
+      <button id="add" type="button" class="btn btn-primary">Tambah Server</button>
+    </div>
+    <div id="error" role="alert" hidden class="mb-4 rounded-md border border-red-500 bg-red-950 px-4 py-3 text-sm text-red-100"></div>
+    <p id="status" class="sr-only" aria-live="polite"></p>
+
+    <div id="empty" hidden class="rounded-lg border border-dashed border-slate-700 px-6 py-16 text-center">
+      <p class="mb-4 text-slate-300">Belum ada server. Tambahkan server Nginx yang ingin dikelola lewat SSH.</p>
+      <button id="add-empty" type="button" class="btn btn-primary">Tambah Server Pertama</button>
+    </div>
+    <ul id="servers" class="space-y-3"></ul>
   </main>
+
+  <!-- Form server -->
+  <dialog id="server-dialog" aria-labelledby="server-title" class="modal">
+    <form id="server-form" novalidate>
+      <h2 id="server-title" class="mb-4 text-lg font-semibold">Tambah Server</h2>
+      <input type="hidden" name="id">
+      <div class="grid gap-x-4 sm:grid-cols-2">
+        <div class="sm:col-span-2"><label for="f-name" class="label">Nama</label><input id="f-name" name="name" class="field" placeholder="VPS Produksi" aria-describedby="e-name"><p id="e-name" class="err"></p></div>
+        <div><label for="f-host" class="label">Host / IP</label><input id="f-host" name="host" class="field font-mono" spellcheck="false" placeholder="203.0.113.10" aria-describedby="e-host"><p id="e-host" class="err"></p></div>
+        <div><label for="f-port" class="label">Port SSH</label><input id="f-port" name="port" type="number" min="1" max="65535" class="field" value="22" aria-describedby="e-port"><p id="e-port" class="err"></p></div>
+        <div class="sm:col-span-2"><label for="f-username" class="label">Username</label><input id="f-username" name="username" class="field font-mono" spellcheck="false" placeholder="deploy" aria-describedby="e-username"><p id="e-username" class="err"></p></div>
+      </div>
+      <fieldset class="mb-3">
+        <legend class="label">Autentikasi</legend>
+        <div class="flex gap-6 text-sm">
+          <label class="flex min-h-10 items-center gap-2"><input type="radio" name="auth" value="password" checked> Password</label>
+          <label class="flex min-h-10 items-center gap-2"><input type="radio" name="auth" value="key"> SSH key</label>
+        </div>
+        <p id="e-auth" class="err"></p>
+      </fieldset>
+      <div id="key-row" hidden>
+        <label for="f-keyPath" class="label">Private key</label>
+        <div class="flex gap-2"><input id="f-keyPath" name="keyPath" class="field font-mono text-xs" readonly placeholder="~/.ssh/id_ed25519" aria-describedby="e-keyPath"><button id="pick-key" type="button" class="btn">Pilih…</button></div>
+        <p id="e-keyPath" class="err"></p>
+      </div>
+      <details class="mb-4 rounded-md border border-slate-700 p-3">
+        <summary class="cursor-pointer text-sm text-slate-300">Lanjutan: lokasi Nginx</summary>
+        <div class="mt-3 grid gap-x-4 sm:grid-cols-2">
+          <div><label for="f-available" class="label">sites-available</label><input id="f-available" name="nginx.available" class="field font-mono text-xs" placeholder="/etc/nginx/sites-available" aria-describedby="e-nginx.available"><p id="e-nginx.available" class="err"></p></div>
+          <div><label for="f-enabled" class="label">sites-enabled</label><input id="f-enabled" name="nginx.enabled" class="field font-mono text-xs" placeholder="/etc/nginx/sites-enabled" aria-describedby="e-nginx.enabled"><p id="e-nginx.enabled" class="err"></p></div>
+          <div><label for="f-nginxBin" class="label">Binary nginx</label><input id="f-nginxBin" name="nginx.nginxBin" class="field font-mono text-xs" placeholder="/usr/sbin/nginx" aria-describedby="e-nginx.nginxBin"><p id="e-nginx.nginxBin" class="err"></p></div>
+          <div><label for="f-reload" class="label">Cara reload</label>
+            <select id="f-reload" name="nginx.reload" class="field" aria-describedby="e-nginx.reload">
+              <option value="systemctl">systemctl reload nginx</option>
+              <option value="service">service nginx reload</option>
+              <option value="nginx-signal">nginx -s reload</option>
+            </select><p id="e-nginx.reload" class="err"></p></div>
+        </div>
+      </details>
+      <p id="e-_" class="err"></p>
+      <div class="flex justify-end gap-3">
+        <button type="button" value="cancel" class="btn" data-close>Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Minta password / passphrase -->
+  <dialog id="secret-dialog" aria-labelledby="secret-title" class="modal">
+    <form id="secret-form" novalidate>
+      <h2 id="secret-title" class="mb-1 text-lg font-semibold">Password SSH</h2>
+      <p id="secret-desc" class="mb-4 text-sm text-slate-400"></p>
+      <label for="secret-input" id="secret-label" class="label">Password</label>
+      <input id="secret-input" type="password" class="field" autocomplete="off">
+      <label id="remember-row" class="mt-3 flex min-h-10 items-center gap-2 text-sm"><input id="remember" type="checkbox"> Ingat di perangkat ini (terenkripsi oleh sistem operasi)</label>
+      <div class="mt-4 flex justify-end gap-3">
+        <button type="button" class="btn" data-close>Batal</button>
+        <button type="submit" class="btn btn-primary">Hubungkan</button>
+      </div>
+    </form>
+  </dialog>
+
   <script type="module" src="renderer.js"></script>
 </body>
 </html>
