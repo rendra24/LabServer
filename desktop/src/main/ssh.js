@@ -143,9 +143,35 @@ function connect(profile, opts = {}) {
 }
 
 function wrap(client) {
+  let sftpPromise = null;
   return {
     client,
     end: () => client.end(),
+    sftp() {
+      sftpPromise ??= new Promise((resolve, reject) =>
+        client.sftp((err, sftp) => (err ? reject(err) : resolve(sftp))));
+      return sftpPromise;
+    },
+    /** Seperti exec, tetapi selalu resolve {code, stdout, stderr} (exit non-zero bukan error). */
+    execFull(command, { stdin, timeoutMs = 20000 } = {}) {
+      return new Promise((resolve, reject) => {
+        client.exec(command, (err, stream) => {
+          if (err) return reject(err);
+          let stdout = "";
+          let stderr = "";
+          const timer = setTimeout(() => {
+            stream.close();
+            reject(Object.assign(new Error("Perintah melewati batas waktu."), { code: "TIMEOUT" }));
+          }, timeoutMs);
+          stream.on("data", (d) => (stdout += d)).stderr.on("data", (d) => (stderr += d));
+          stream.on("close", (code) => {
+            clearTimeout(timer);
+            resolve({ code, stdout, stderr });
+          });
+          stream.end(stdin ?? undefined);
+        });
+      });
+    },
     /** Jalankan perintah; resolve stdout bila exit 0, reject {code, stdout, stderr} bila tidak. */
     exec(command, { stdin, timeoutMs = 20000 } = {}) {
       return new Promise((resolve, reject) => {
