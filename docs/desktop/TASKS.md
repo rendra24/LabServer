@@ -4,7 +4,7 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 
 ## Sprint D1: Fondasi Electron & Koneksi SSH
 - [x] **D1.1** Scaffold `desktop/` (Electron, main/preload/renderer, `contextIsolation`, `sandbox`, CSP, blokir navigasi), skrip `npm start`/`npm test`/lint.
-- [ ] **D1.2** Penyimpanan profil server (`servers.json` di userData) dengan validasi (host, port 1–65535, user, auth, path absolut).
+- [x] **D1.2** Penyimpanan profil server (`servers.json` di userData) dengan validasi (host, port 1–65535, user, auth, path absolut).
 - [ ] **D1.3** Modul SSH (`ssh2`): connect dengan password, key, key+passphrase; timeout; error ramah (auth gagal, host tak terjangkau, key tidak terbaca).
   - *Dependensi:* D1.2
 - [ ] **D1.4** Verifikasi host key TOFU (fingerprint SHA256, persetujuan pengguna, tolak bila berubah).
