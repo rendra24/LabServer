@@ -1,0 +1,23 @@
+{
+  "name": "dashboard-server-desktop",
+  "productName": "Dashboard Server",
+  "version": "0.1.0",
+  "description": "Kelola vhost Nginx di server remote lewat SSH",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/",
+    "lint": "eslint .",
+    "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify"
+  },
+  "dependencies": {
+    "ssh2": "1.17.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "electron": "44.8.0",
+    "eslint": "10.13.0",
+    "globals": "17.13.0"
+  }
+}
