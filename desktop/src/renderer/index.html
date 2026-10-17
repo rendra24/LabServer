@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard Server</title>
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="vendor/ace/css/ace.css">
+  <link rel="stylesheet" href="vendor/ace/css/theme/tomorrow_night.css">
 </head>
 <body class="min-h-screen">
   <header class="flex items-center gap-4 border-b border-slate-800 bg-slate-900 px-6 py-3">
@@ -13,19 +15,97 @@
     <span id="version" class="text-xs text-slate-400"></span>
   </header>
 
-  <main class="mx-auto max-w-5xl p-6">
+  <div id="error" role="alert" hidden class="mx-6 mt-4 rounded-md border border-red-500 bg-red-950 px-4 py-3 text-sm text-red-100"></div>
+  <p id="status" class="sr-only" aria-live="polite"></p>
+
+  <!-- View: daftar server -->
+  <main id="view-servers" class="mx-auto max-w-5xl p-6">
     <div class="mb-4 flex items-center justify-between gap-3">
-      <h1 class="text-xl font-semibold">Server</h1>
+      <h1 tabindex="-1" class="text-xl font-semibold">Server</h1>
       <button id="add" type="button" class="btn btn-primary">Tambah Server</button>
     </div>
-    <div id="error" role="alert" hidden class="mb-4 rounded-md border border-red-500 bg-red-950 px-4 py-3 text-sm text-red-100"></div>
-    <p id="status" class="sr-only" aria-live="polite"></p>
-
     <div id="empty" hidden class="rounded-lg border border-dashed border-slate-700 px-6 py-16 text-center">
       <p class="mb-4 text-slate-300">Belum ada server. Tambahkan server Nginx yang ingin dikelola lewat SSH.</p>
       <button id="add-empty" type="button" class="btn btn-primary">Tambah Server Pertama</button>
     </div>
     <ul id="servers" class="space-y-3"></ul>
+  </main>
+
+  <!-- View: vhost di satu server -->
+  <main id="view-sites" hidden class="mx-auto max-w-6xl p-6">
+    <button id="sites-back" type="button" class="btn mb-4">← Server</button>
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 id="sites-title" tabindex="-1" class="text-xl font-semibold"></h1>
+        <p id="sites-sub" class="font-mono text-xs text-slate-400"></p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="sites-refresh" type="button" class="btn">Muat Ulang</button>
+        <button id="sites-new" type="button" class="btn btn-primary">Tambah Konfigurasi</button>
+      </div>
+    </div>
+    <div class="grid gap-4 lg:grid-cols-[3fr_2fr]">
+      <div>
+        <p id="sites-empty" hidden class="rounded-lg border border-dashed border-slate-700 px-6 py-12 text-center text-slate-300">Tidak ada berkas konfigurasi di direktori sites-available.</p>
+        <div id="sites-table" class="overflow-x-auto rounded-lg border border-slate-800">
+          <table class="w-full min-w-[40rem] text-left text-sm">
+            <caption class="sr-only">Berkas konfigurasi Nginx</caption>
+            <thead class="bg-slate-900 text-xs uppercase tracking-wide text-slate-400">
+              <tr><th scope="col" class="px-4 py-3">Berkas</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Aktif</th><th scope="col" class="px-4 py-3">Diubah</th><th scope="col" class="px-4 py-3">Aksi</th></tr>
+            </thead>
+            <tbody id="sites-rows" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+      <section aria-labelledby="sites-diag-title" class="flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
+        <h2 id="sites-diag-title" class="mb-3 font-semibold">Diagnostik Nginx</h2>
+        <div class="mb-2 flex flex-wrap gap-2">
+          <button id="sites-test" type="button" class="btn">Test Nginx Syntax</button>
+          <button id="sites-reload" type="button" class="btn btn-primary" disabled aria-describedby="sites-reload-hint">Reload Nginx</button>
+        </div>
+        <p id="sites-reload-hint" class="mb-3 text-xs text-slate-400">Reload terkunci sampai Test Nginx Syntax lolos setelah perubahan terakhir.</p>
+        <pre id="sites-log" role="log" aria-label="Output diagnostik" tabindex="0" class="min-h-40 flex-1 overflow-auto whitespace-pre-wrap rounded-md bg-black p-3 font-mono text-xs text-slate-100"></pre>
+      </section>
+    </div>
+  </main>
+
+  <!-- View: editor -->
+  <main id="view-editor" hidden class="mx-auto max-w-7xl p-6">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <button id="ed-back" type="button" class="btn">← Daftar vhost</button>
+      <h1 id="ed-title" tabindex="-1" class="flex-1 text-xl font-semibold"></h1>
+      <span id="ed-state"></span>
+      <button id="ed-save" type="button" class="btn btn-primary">Simpan ke Server</button>
+    </div>
+    <div class="mb-3 max-w-md">
+      <label for="ed-filename" class="label">Nama berkas</label>
+      <input id="ed-filename" class="field font-mono" spellcheck="false" autocomplete="off" placeholder="app.example.com" aria-describedby="ed-filename-err">
+      <p id="ed-filename-err" class="err"></p>
+    </div>
+    <section id="ed-clone" hidden aria-label="Ganti domain hasil clone" class="mb-4 rounded-lg border border-sky-800 bg-sky-950 p-4 text-sm">
+      <p class="mb-3">Isi disalin dari berkas sumber. Ganti domainnya, lalu sesuaikan hal lain (port, path) sebelum menyimpan. Hasil clone tersimpan <strong>nonaktif</strong>.</p>
+      <div class="flex flex-wrap items-end gap-3">
+        <div><label for="ed-old-domain" class="label">Domain lama</label><input id="ed-old-domain" class="field font-mono" spellcheck="false"></div>
+        <div><label for="ed-new-domain" class="label">Domain baru</label><input id="ed-new-domain" class="field font-mono" spellcheck="false" aria-describedby="ed-new-domain-err"><p id="ed-new-domain-err" class="err"></p></div>
+        <button id="ed-replace" type="button" class="btn mb-6">Ganti di isi</button>
+      </div>
+      <p id="ed-clone-result" role="status" class="text-slate-200"></p>
+    </section>
+    <div class="grid gap-4 lg:grid-cols-[3fr_2fr]">
+      <div>
+        <div id="ed-editor" class="h-[60vh] min-h-80 w-full rounded-lg border border-slate-800"></div>
+        <p class="mt-2 text-xs text-slate-400">Simpan: Ctrl/Cmd+S. Di editor, tekan Esc lalu Tab untuk keluar dari area teks.</p>
+      </div>
+      <section aria-labelledby="ed-diag-title" class="flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
+        <h2 id="ed-diag-title" class="mb-3 font-semibold">Diagnostik Nginx</h2>
+        <div class="mb-2 flex flex-wrap gap-2">
+          <button id="ed-test" type="button" class="btn">Test Nginx Syntax</button>
+          <button id="ed-reload" type="button" class="btn btn-primary" disabled aria-describedby="ed-reload-hint">Reload Nginx</button>
+        </div>
+        <p id="ed-reload-hint" class="mb-3 text-xs text-slate-400">Reload terkunci sampai Test lolos dan tidak ada perubahan belum disimpan.</p>
+        <pre id="ed-log" role="log" aria-label="Output diagnostik" tabindex="0" class="min-h-40 flex-1 overflow-auto whitespace-pre-wrap rounded-md bg-black p-3 font-mono text-xs text-slate-100"></pre>
+      </section>
+    </div>
   </main>
 
   <!-- Form server -->
@@ -84,11 +164,12 @@
       <label id="remember-row" class="mt-3 flex min-h-10 items-center gap-2 text-sm"><input id="remember" type="checkbox"> Ingat di perangkat ini (terenkripsi oleh sistem operasi)</label>
       <div class="mt-4 flex justify-end gap-3">
         <button type="button" class="btn" data-close>Batal</button>
-        <button type="submit" class="btn btn-primary">Hubungkan</button>
+        <button id="secret-submit" type="submit" class="btn btn-primary">Hubungkan</button>
       </div>
     </form>
   </dialog>
 
+  <script src="vendor/ace/ace.js"></script>
   <script type="module" src="renderer.js"></script>
 </body>
 </html>

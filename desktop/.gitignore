@@ -5,3 +5,4 @@ scripts/.dev-key.pub
 scripts/.dev-key-plain
 scripts/.dev-key-plain.pub
 scripts/.dev-hostkey
+src/renderer/vendor/

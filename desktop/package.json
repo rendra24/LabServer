@@ -6,12 +6,15 @@
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
+    "vendor": "node scripts/vendor.js",
+    "prestart": "npm run vendor",
     "start": "electron .",
     "test": "node --test --test-concurrency=1 test/ test/integration/",
     "lint": "eslint .",
     "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify"
   },
   "dependencies": {
+    "ace-builds": "1.45.0",
     "ssh2": "1.17.0"
   },
   "devDependencies": {

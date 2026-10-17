@@ -25,10 +25,10 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 **DoD:** Semua operasi D2 lulus tes integrasi pada nginx sungguhan di container untuk ketiga model izin.
 
 ## Sprint D3: UI Pengelolaan Vhost
-- [ ] **D3.1** Halaman vhost per server: daftar, status, toggle, Tambah, Edit, Clone.
-- [ ] **D3.2** Editor Ace (bundle lokal) + simpan + status Tersimpan/Belum Disimpan.
-- [ ] **D3.3** Clone dengan "ganti domain" (pakai ulang `replaceDomain`).
-- [ ] **D3.4** Panel diagnostik: Test Nginx Syntax, Reload terkunci sampai tes lolos; dialog password sudo.
+- [x] **D3.1** Halaman vhost per server: daftar, status, toggle, Tambah, Edit, Clone.
+- [x] **D3.2** Editor Ace (bundle lokal) + simpan + status Tersimpan/Belum Disimpan.
+- [x] **D3.3** Clone dengan "ganti domain" (pakai ulang `replaceDomain`).
+- [x] **D3.4** Panel diagnostik: Test Nginx Syntax, Reload terkunci sampai tes lolos; dialog password sudo.
 
 **DoD:** Alur edit/tambah/clone/aktifkan/test/reload diverifikasi end-to-end di aplikasi terhadap server container (alur utama + satu kasus error).
 
