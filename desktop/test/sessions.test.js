@@ -10,7 +10,7 @@ function fakeConn() {
   return { client, ended: false, end() { this.ended = true; client.emit("close"); } };
 }
 
-function setup({ ops = {}, open } = {}) {
+function setup({ ops = {}, open, monitor = {} } = {}) {
   const conns = [];
   const calls = [];
   const mgr = createSessionManager({
@@ -29,6 +29,14 @@ function setup({ ops = {}, open } = {}) {
         },
       }),
     askSudoPassword: async () => "x",
+    makeMonitor: () => ({
+      load: async (range) => {
+        calls.push(["monitor.load", range]);
+        if (monitor.load) return monitor.load(range);
+        return { range, panels: [] };
+      },
+      test: async () => (monitor.test ? monitor.test() : { ok: true, targets: [] }),
+    }),
   });
   return { mgr, conns, calls };
 }
@@ -114,4 +122,27 @@ test("gagal connect dipetakan (SshError)", async () => {
   const r = await mgr.connect("s1", {});
   assert.equal(r.ok, false);
   assert.equal(r.code, "AUTH_FAILED");
+});
+
+test("monitor: butuh sesi; rentang divalidasi sebelum menyentuh server", async () => {
+  const { mgr, calls } = setup();
+  assert.equal((await mgr.monitor("s1", "load", "1h")).code, "NOT_CONNECTED");
+  await mgr.connect("s1", {});
+  for (const bad of ["30d", "__proto__", 5, undefined, "1h; up"]) {
+    assert.equal((await mgr.monitor("s1", "load", bad)).code, "INVALID_REQUEST", String(bad));
+  }
+  assert.equal(calls.filter((c) => c[0] === "monitor.load").length, 0);
+  assert.deepEqual(await mgr.monitor("s1", "load", "1h"), { ok: true, data: { range: "1h", panels: [] } });
+  assert.deepEqual(await mgr.monitor("s1", "test"), { ok: true, data: { ok: true, targets: [] } });
+  assert.equal((await mgr.monitor("s1", "exec", "1h")).code, "INVALID_REQUEST");
+});
+
+test("monitor: PromError dipetakan ke kode & pesan ramah", async () => {
+  const { PromError } = require("../src/main/prometheus");
+  const { mgr } = setup({ monitor: { load: async () => { throw new PromError("PROM_UNREACHABLE", "ECONNREFUSED 10.0.0.1"); } } });
+  await mgr.connect("s1", {});
+  const r = await mgr.monitor("s1", "load", "1h");
+  assert.equal(r.code, "PROM_UNREACHABLE");
+  assert.match(r.message, /Prometheus/);
+  assert.ok(!r.message.includes("10.0.0.1"));
 });

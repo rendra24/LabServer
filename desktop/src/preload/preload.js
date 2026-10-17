@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("api", {
     connect: call("servers:connect"),
     disconnect: call("servers:disconnect"),
   },
+  monitor: (id, op, range) => ipcRenderer.invoke("monitor:call", id, op, range),
   sites: (id, op, ...args) => ipcRenderer.invoke("sites:call", id, op, ...args),
   /** handler({requestId, server}) -> Promise<string|null> */
   onSudoAsk(handler) {

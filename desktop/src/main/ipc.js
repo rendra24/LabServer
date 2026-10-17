@@ -7,6 +7,7 @@ const { connect } = require("./ssh");
 const { createServerService } = require("./services");
 const { createSessionManager } = require("./sessions");
 const { createNginxOps } = require("./nginx");
+const { createMonitor } = require("./monitor");
 const crypto = require("node:crypto");
 const { isAllowedNavigation } = require("./security");
 
@@ -63,6 +64,7 @@ function registerIpc() {
     open: (id, creds) => svc.open(id, creds),
     getProfile: (id) => svc.list().find((x) => x.id === id) || null,
     makeOps: createNginxOps,
+    makeMonitor: createMonitor,
     askSudoPassword,
   });
   app.on("before-quit", () => sessions.closeAll());
@@ -119,6 +121,7 @@ function registerIpc() {
     return { ok: true };
   });
   handle("sites:call", (_e, id, op, ...args) => sessions.call(str(id), str(op), ...args));
+  handle("monitor:call", (_e, id, op, range) => sessions.monitor(str(id), str(op), str(range)));
   handle("sudo:answer", (_e, requestId, value) => {
     pendingSudo.get(str(requestId))?.(str(value));
     return { ok: true };

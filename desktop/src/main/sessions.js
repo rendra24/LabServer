@@ -1,5 +1,7 @@
 const { NginxError } = require("./nginx");
 const { failure } = require("./services");
+const { RANGES } = require("./monitor-catalog");
+const { PromError } = require("./prometheus");
 
 const MAX_CONTENT = 1_048_576;
 const isName = (v) => typeof v === "string" && v.length <= 255;
@@ -21,7 +23,7 @@ const notConnected = { ok: false, code: "NOT_CONNECTED", message: "Koneksi ke se
 const isConnectionLoss = (e) => /not connected|no response from server|ECONNRESET|channel open failure|socket/i.test(e?.message || "");
 
 /** Satu sesi SSH (koneksi + operasi Nginx) per server, hidup di main process. */
-function createSessionManager({ open, getProfile, makeOps, askSudoPassword }) {
+function createSessionManager({ open, getProfile, makeOps, makeMonitor, askSudoPassword }) {
   const sessions = new Map();
 
   function close(id) {
@@ -42,12 +44,30 @@ function createSessionManager({ open, getProfile, makeOps, askSudoPassword }) {
       try {
         const conn = await open(id, creds);
         const ops = makeOps(conn, profile, { askSudoPassword: () => askSudoPassword(id) });
-        sessions.set(id, { conn, ops });
+        sessions.set(id, { conn, ops, monitor: makeMonitor?.(conn, profile) });
         conn.client.on("close", () => {
           if (sessions.get(id)?.conn === conn) sessions.delete(id);
         });
         return { ok: true };
       } catch (e) {
+        return failure(e);
+      }
+    },
+
+    /** Monitoring Prometheus: hanya 'load' (dengan rentang katalog) dan 'test'. */
+    async monitor(id, op, range) {
+      const valid = op === "test" || (op === "load" && typeof range === "string" && Object.hasOwn(RANGES, range));
+      if (!valid) return { ok: false, code: "INVALID_REQUEST", message: "Permintaan tidak valid." };
+      const s = sessions.get(id);
+      if (!s?.monitor) return notConnected;
+      try {
+        return { ok: true, data: op === "load" ? await s.monitor.load(range) : await s.monitor.test() };
+      } catch (e) {
+        if (e instanceof PromError) return { ok: false, code: e.code, message: e.message };
+        if (isConnectionLoss(e)) {
+          close(id);
+          return notConnected;
+        }
         return failure(e);
       }
     },
