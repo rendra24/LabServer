@@ -1,10 +1,11 @@
 // Server SSH in-process (ssh2.Server) untuk tes koneksi tanpa sshd sungguhan.
 const crypto = require("node:crypto");
+const net = require("node:net");
 const { Server, utils } = require("ssh2");
 
 function startServer({ password = "pw-123", authorizedKey, hostKey, port = 0 } = {}) {
   hostKey = hostKey || utils.generateKeyPairSync("ed25519").private;
-  const stats = { authAttempts: 0 };
+  const stats = { authAttempts: 0, forwards: [] };
   const allowedKeys = [].concat(authorizedKey || []).map((k) => utils.parseKey(k));
   const server = new Server({ hostKeys: [hostKey] }, (client) => {
     client.on("authentication", (ctx) => {
@@ -20,6 +21,18 @@ function startServer({ password = "pw-123", authorizedKey, hostKey, port = 0 } =
       ctx.reject(["password", "publickey"]);
     });
     client.on("ready", () => {
+      // direct-tcpip (port forward) untuk tes klien Prometheus: selalu diteruskan ke loopback lokal.
+      client.on("tcpip", (accept, reject, info) => {
+        stats.forwards.push({ host: info.destIP, port: info.destPort });
+        const sock = net.connect(info.destPort, "127.0.0.1");
+        sock.once("connect", () => {
+          const ch = accept();
+          ch.pipe(sock).pipe(ch);
+          ch.on("error", () => sock.destroy());
+          sock.on("error", () => ch.destroy());
+        });
+        sock.once("error", () => reject());
+      });
       client.on("session", (accept) => {
         accept().on("exec", (acc, _rej, info) => {
           const stream = acc();
