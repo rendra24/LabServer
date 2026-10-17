@@ -16,11 +16,11 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 
 ## Sprint D2: Operasi Nginx Remote
 - [x] **D2.1** Validasi nama berkas & quoting shell (unit test, termasuk payload injeksi).
-- [ ] **D2.2** List `sites-available` + status `sites-enabled`; baca berkas.
-- [ ] **D2.3** Tulis atomik, tambah (eksklusif), clone; fallback `sudo` bila izin SFTP ditolak.
-- [ ] **D2.4** Aktif/nonaktif symlink (tidak menimpa entri asing).
-- [ ] **D2.5** `nginx -t` dan reload aman (test ulang di main sebelum reload); `sudo -n` lalu fallback password sudo via stdin.
-- [ ] **D2.6** Tes integrasi terhadap server SSH di container (user grup-writable, user sudo NOPASSWD, user sudo berpassword).
+- [x] **D2.2** List `sites-available` + status `sites-enabled`; baca berkas.
+- [x] **D2.3** Tulis atomik, tambah (eksklusif), clone; fallback `sudo` bila izin SFTP ditolak.
+- [x] **D2.4** Aktif/nonaktif symlink (tidak menimpa entri asing).
+- [x] **D2.5** `nginx -t` dan reload aman (test ulang di main sebelum reload); `sudo -n` lalu fallback password sudo via stdin.
+- [x] **D2.6** Tes integrasi terhadap server SSH di container (user grup-writable, user sudo NOPASSWD, user sudo berpassword).
 
 **DoD:** Semua operasi D2 lulus tes integrasi pada nginx sungguhan di container untuk ketiga model izin.
 

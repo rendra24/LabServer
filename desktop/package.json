@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/ test/integration/",
+    "test": "node --test --test-concurrency=1 test/ test/integration/",
     "lint": "eslint .",
     "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify"
   },
