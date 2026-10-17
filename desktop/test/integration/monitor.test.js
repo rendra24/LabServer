@@ -52,14 +52,18 @@ test("Monitoring dengan Prometheus nyata", { skip }, async (t) => {
     const r = await until(async () => {
       const x = await monitor.load("15m");
       const cpu = byId(x, "cpu");
-      const ready = x.availability.node && x.availability.nginx && cpu.series?.[0].points.length >= 3 && byId(x, "nginx_requests").last !== null;
+      const ready = x.availability.node && x.availability.nginx && cpu.series?.[0].points.length >= 3
+        && byId(x, "nginx_requests").last !== null && byId(x, "disk").last !== null;
       return { ok: ready, value: x, why: x.availability };
     });
     assert.equal(r.panels.filter((p) => p.error).length, 0, JSON.stringify(r.panels.filter((p) => p.error)));
     assert.ok(r.panels.every((p) => p.available));
 
     const num = (id) => byId(r, id).last;
-    for (const id of ["cpu", "memory", "disk"]) assert.ok(num(id) >= 0 && num(id) <= 100, `${id}=${num(id)}`);
+    for (const id of ["cpu", "memory", "disk"]) {
+      assert.notEqual(num(id), null, `${id} tidak punya data`); // null lolos perbandingan numerik; cek eksplisit
+      assert.ok(num(id) >= 0 && num(id) <= 100, `${id}=${num(id)}`);
+    }
 
     // memori & disk vs sumber kebenaran di server (toleransi karena selisih waktu/GC)
     const [total, avail] = sh("awk '/MemTotal|MemAvailable/{print $2}' /proc/meminfo").trim().split("\n").map(Number);
@@ -88,5 +92,13 @@ test("Monitoring dengan Prometheus nyata", { skip }, async (t) => {
     for (const p of r.panels.filter((x) => x.group === "nginx")) assert.equal(p.available, false, p.id);
     assert.equal(byId(r, "cpu").available, true);
     execFileSync(setup, [env.PROM_CONTAINER], { stdio: "ignore" }); // pulihkan
+  });
+
+  await t.test("Prometheus mati: PROM_UNREACHABLE yang jelas, tanpa crash; pulih setelah dinyalakan lagi", async () => {
+    sh('pkill -f "^/usr/bin/[p]rometheus --config"; sleep 1');
+    await assert.rejects(monitor.load("15m"), (e) => e.code === "PROM_UNREACHABLE" && /Prometheus/.test(e.message) && !/127\.0\.0\.1/.test(e.message));
+    await assert.rejects(monitor.test(), { code: "PROM_UNREACHABLE" });
+    execFileSync(setup, [env.PROM_CONTAINER], { stdio: "ignore" });
+    assert.equal((await monitor.test()).ok, true);
   });
 });

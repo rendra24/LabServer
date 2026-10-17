@@ -57,17 +57,19 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 **DoD:** Tes terhadap Prometheus + node_exporter + nginx exporter nyata di container mengembalikan seri untuk semua panel; panel tanpa exporter terdeteksi "tidak tersedia".
 
 ### M2: UI Monitoring
-- [ ] **M2.1** Bundle uPlot lokal; halaman Monitoring: kartu ringkas + grafik per panel, pilih rentang, auto-refresh, state loading/error/kosong/"tidak tersedia".
+- [x] **M2.1** Bundle uPlot lokal; halaman Monitoring: kartu ringkas + grafik per panel, pilih rentang, auto-refresh, state loading/error/kosong/"tidak tersedia".
   - *Dependensi:* M1.3
 - [ ] **M2.2** Pengaturan Prometheus per server di form server (host/port) dan tombol "Tes Prometheus".
+  - *Status 2026-10-17:* kode + validasi store (tes unit) selesai; **belum diverifikasi lewat GUI** (jendela app tidak bisa dikontrol saat itu). Perlu dicoba manual: isi/ubah host-port di form server, tombol Tes Prometheus di halaman Monitoring.
   - *Dependensi:* M1.2
 - [ ] **M2.3** Aksesibilitas: tabel data alternatif/ringkasan teks per grafik, kontras, fokus.
+  - *Status 2026-10-17:* ringkasan teks (sr-only) + `role=img`/`aria-describedby` per grafik sudah ada; belum diuji dengan pembaca layar.
   - *Dependensi:* M2.1
 
 **DoD:** Alur utama dan satu kasus error diverifikasi di aplikasi terhadap Prometheus di container.
 
 ### M3: Panduan & verifikasi
-- [ ] **M3.1** Panduan server: instal Prometheus + node_exporter + nginx exporter (`stub_status`), contoh `prometheus.yml`, firewall; README desktop diperbarui.
-- [ ] **M3.2** Tes integrasi end-to-end (container Ubuntu dengan paket apt `prometheus`, `prometheus-node-exporter`, `prometheus-nginx-exporter`).
+- [x] **M3.1** Panduan server: instal Prometheus + node_exporter + nginx exporter (`stub_status`), contoh `prometheus.yml`, firewall; README desktop diperbarui.
+- [x] **M3.2** Tes integrasi end-to-end (container Ubuntu dengan paket apt `prometheus`, `prometheus-node-exporter`, `prometheus-nginx-exporter`).
 
 **DoD:** Panduan diikuti di container dan menghasilkan dashboard berisi data.

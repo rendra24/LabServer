@@ -63,6 +63,35 @@ Cara reload dipilih per server (Lanjutan → Cara reload): `systemctl`, `service
 - Renderer disandbox tanpa akses Node; semua operasi lewat IPC sempit dengan validasi di proses utama; tanpa CDN.
 - Reload selalu menjalankan `nginx -t` ulang di proses utama; sintaks rusak = reload ditolak.
 
+## Monitoring (Prometheus)
+Halaman **Monitoring** (tombol di daftar vhost) menampilkan CPU, memori, disk `/`, jaringan, load, uptime, dan metrik Nginx dari Prometheus di server, lewat **SSH tunnel** (tidak ada port yang dibuka). Prometheus sendirian hanya punya metrik dirinya; data host dan Nginx datang dari exporter, jadi di server perlu (contoh Ubuntu/Debian, versi yang diuji: Prometheus 2.45, node_exporter 1.7, nginx exporter 1.1):
+
+```bash
+sudo apt install prometheus prometheus-node-exporter prometheus-nginx-exporter
+```
+1. **Batasi ke loopback** (paket apt default membuka semua interface). Di `/etc/default/prometheus`, `/etc/default/prometheus-node-exporter`, `/etc/default/prometheus-nginx-exporter`, set `ARGS`:
+   - Prometheus: `ARGS="--web.listen-address=127.0.0.1:9090"`
+   - node_exporter: `ARGS="--web.listen-address=127.0.0.1:9100"`
+   - nginx exporter: `ARGS="--nginx.scrape-uri=http://127.0.0.1:8082/stub_status --web.listen-address=127.0.0.1:9113"`
+2. **Aktifkan `stub_status`** hanya untuk loopback (mis. `/etc/nginx/conf.d/stub.conf`):
+   ```nginx
+   server { listen 127.0.0.1:8082; location /stub_status { stub_status; allow 127.0.0.1; deny all; } }
+   ```
+3. **Scrape** di `/etc/prometheus/prometheus.yml`:
+   ```yaml
+   scrape_configs:
+     - job_name: node
+       static_configs: [{ targets: ["127.0.0.1:9100"] }]
+     - job_name: nginx
+       static_configs: [{ targets: ["127.0.0.1:9113"] }]
+   ```
+4. `sudo systemctl restart prometheus prometheus-node-exporter prometheus-nginx-exporter nginx`, lalu cek `curl -s 127.0.0.1:9090/api/v1/targets` (semua `up`).
+
+Di aplikasi: buka server → **Monitoring** → **Tes Prometheus** untuk melihat target. Alamat Prometheus (default `127.0.0.1:9090`) dapat diubah di form server (Monitoring). Panel yang exporter-nya tidak ada ditandai "tidak tersedia", panel lain tetap jalan. Jika root `/` server bukan filesystem yang diekspor node_exporter (mis. `overlay`/di dalam container), panel Disk kosong.
+Panel dan query bersifat tetap (tidak ada PromQL bebas). Rentang 15 menit–7 hari, auto-refresh 15 detik.
+
+Tes end-to-end dengan Prometheus sungguhan: `test/integration/setup-monitoring.sh` lalu `SSHD_PORT=2223 PROM_CONTAINER=dssshd npm test`.
+
 ## Build installer
 ```bash
 npm run dist:mac     # .dmg arm64 + x64 (dijalankan di macOS)

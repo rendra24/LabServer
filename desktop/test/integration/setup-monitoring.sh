@@ -36,7 +36,8 @@ YML
 fi
 
 rm -rf /tmp/prom-data; mkdir -p /tmp/prom-data
-nohup /usr/bin/prometheus-node-exporter --web.listen-address=127.0.0.1:9100 >/tmp/node-exporter.log 2>&1 &
+# overlay (root container) ikut diekspor; di VPS nyata root biasanya ext4/xfs dan sudah diekspor default
+nohup /usr/bin/prometheus-node-exporter --collector.filesystem.fs-types-exclude="^(tmpfs|squashfs|ramfs)$" --web.listen-address=127.0.0.1:9100 >/tmp/node-exporter.log 2>&1 &
 if [ "$NGINX_EXPORTER" = "1" ]; then
   nohup /usr/bin/prometheus-nginx-exporter --nginx.scrape-uri=http://127.0.0.1:8082/stub_status --web.listen-address=127.0.0.1:9113 >/tmp/nginx-exporter.log 2>&1 &
 fi

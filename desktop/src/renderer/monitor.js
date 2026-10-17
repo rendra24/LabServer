@@ -79,7 +79,7 @@ function createCard(panel) {
   const value = el("p", { cls: "text-2xl font-semibold tabular-nums" });
   const body = el("div", { cls: "mt-2" });
   const legend = el("ul", { cls: "mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-300" });
-  const summary = el("p", { cls: "sr-only" });
+  const summary = el("p", { cls: "sr-only", attrs: { id: `sum-${panel.id}` } });
   const root = el(
     "section",
     { cls: "rounded-lg border border-slate-800 bg-slate-900 p-4", attrs: { "aria-label": panel.title } },
@@ -112,16 +112,17 @@ function fillCard(panel) {
     summary.textContent = `${panel.title}: ${value.textContent}`;
     return card;
   }
-  const hasData = panel.series.some((s) => s.points.some((p) => p[1] !== null));
+  const maxPoints = Math.max(0, ...panel.series.map((s) => s.points.filter((p) => p[1] !== null).length));
+  const hasData = maxPoints >= 2; // satu titik tidak bisa digambar sebagai garis
   const existing = charts.get(panel.id);
   if (!hasData) {
     existing?.chart.destroy();
     charts.delete(panel.id);
-    body.replaceChildren(el("p", { text: "Belum ada data untuk rentang ini.", cls: "text-sm text-slate-400" }));
+    body.replaceChildren(el("p", { text: maxPoints === 1 ? "Data baru terkumpul; grafik tampil setelah minimal 2 titik." : "Belum ada data untuk rentang ini.", cls: "text-sm text-slate-400" }));
   } else if (existing && body.contains(existing.box)) {
     existing.chart.setData(chartData(panel));
   } else {
-    const box = el("div");
+    const box = el("div", { attrs: { role: "img", "aria-label": `Grafik ${panel.title}`, "aria-describedby": `sum-${panel.id}` } });
     body.replaceChildren(box);
     const chart = new window.uPlot(chartOptions(panel, Math.max(220, body.clientWidth || 400)), chartData(panel), box);
     charts.set(panel.id, { chart, box });
@@ -172,6 +173,28 @@ async function load() {
   announce("Data monitoring diperbarui.");
 }
 
+async function testPrometheus() {
+  const box = $("mon-targets");
+  box.hidden = false;
+  box.replaceChildren(el("p", { text: "Menguji koneksi ke Prometheus…", cls: "text-slate-300" }));
+  const r = await api.monitor(app.server.id, "test");
+  if (!r.ok) {
+    if (r.code === "NOT_CONNECTED") return show("servers");
+    box.replaceChildren(el("p", { text: `✘ ${r.message}`, cls: "text-red-300" }));
+    return;
+  }
+  const t = r.data.targets;
+  box.replaceChildren(
+    el("p", { text: `✔ Prometheus terjangkau (${app.server.prometheus.host}:${app.server.prometheus.port}). ${t.length} target di-scrape.`, cls: "mb-2 text-emerald-300" }),
+    ...(t.length
+      ? [el("ul", { cls: "space-y-1" }, ...t.map((x) => el("li", { cls: "flex items-center gap-2 font-mono text-xs" },
+          el("span", { text: x.health === "up" ? "● up" : `● ${x.health}`, cls: x.health === "up" ? "text-emerald-300" : "text-red-300" }),
+          el("span", { text: `${x.job} · ${x.instance}` }))))]
+      : [el("p", { text: "Belum ada target. Tambahkan scrape_configs di prometheus.yml.", cls: "text-slate-400" })]),
+  );
+}
+
+$("mon-test").addEventListener("click", testPrometheus);
 $("mon-back").addEventListener("click", () => show("sites"));
 $("mon-refresh").addEventListener("click", load);
 $("mon-auto").addEventListener("change", startTimer);
@@ -183,6 +206,7 @@ onShow("monitor", () => {
   showError("");
   $("mon-title").textContent = `Monitoring · ${app.server.name}`;
   $("mon-notice").hidden = true;
+  $("mon-targets").hidden = true;
   $("mon-body").replaceChildren(el("p", { text: "Memuat data…", cls: "text-sm text-slate-400" }));
   $("mon-updated").textContent = "";
   buildRangeButtons();

@@ -112,6 +112,8 @@ export function openForm(s) {
     for (const k of ["name", "host", "port", "username", "keyPath"]) form[k].value = s[k] ?? "";
     form.auth.value = s.auth;
     for (const k of ["available", "enabled", "nginxBin", "reload"]) form[`nginx.${k}`].value = s.nginx[k];
+    form["prometheus.host"].value = s.prometheus?.host ?? "";
+    form["prometheus.port"].value = s.prometheus?.port ?? "";
   }
   setAuthUi();
   $("server-dialog").showModal();
@@ -134,6 +136,7 @@ form.addEventListener("submit", async (e) => {
     auth: form.auth.value,
     keyPath: form.keyPath.value,
     nginx: Object.fromEntries(["available", "enabled", "nginxBin", "reload"].map((k) => [k, form[`nginx.${k}`].value])),
+    prometheus: { host: form["prometheus.host"].value, port: form["prometheus.port"].value },
   });
   clearErrors();
   if (!r.ok) {
@@ -146,7 +149,7 @@ form.addEventListener("submit", async (e) => {
         input.setAttribute("aria-invalid", "true");
         first ??= input;
       }
-      if (field.startsWith("nginx.")) form.querySelector("details").open = true;
+      if (field.startsWith("nginx.") || field.startsWith("prometheus.")) input?.closest("details")?.setAttribute("open", "");
     }
     first?.focus();
     return;
