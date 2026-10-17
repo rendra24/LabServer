@@ -9,7 +9,7 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
   - *Dependensi:* D1.2
 - [x] **D1.4** Verifikasi host key TOFU (fingerprint SHA256, persetujuan pengguna, tolak bila berubah).
   - *Dependensi:* D1.3
-- [ ] **D1.5** UI daftar server: tambah/ubah/hapus profil, tombol Tes Koneksi, dialog fingerprint, opsi "Ingat password" via `safeStorage`.
+- [x] **D1.5** UI daftar server: tambah/ubah/hapus profil, tombol Tes Koneksi, dialog fingerprint, opsi "Ingat password" via `safeStorage`.
   - *Dependensi:* D1.3, D1.4
 
 **DoD:** Aplikasi berjalan (`npm start`), bisa connect ke server SSH uji (container) dengan password dan key, fingerprint baru diminta persetujuan dan fingerprint berubah ditolak.
