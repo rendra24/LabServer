@@ -91,6 +91,7 @@ $("sites-back").addEventListener("click", () => {
 });
 $("sites-refresh").addEventListener("click", loadSites);
 $("sites-new").addEventListener("click", () => show("editor", { mode: "new" }));
+$("sites-monitor").addEventListener("click", () => show("monitor"));
 
 let shownServerId = null;
 

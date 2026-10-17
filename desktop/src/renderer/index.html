@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="workspace.css">
   <link rel="stylesheet" href="vendor/ace/css/ace.css">
+  <link rel="stylesheet" href="vendor/uplot/uPlot.min.css">
   <link rel="stylesheet" href="vendor/ace/css/theme/tomorrow_night.css">
   <link rel="stylesheet" href="vendor/ace/css/theme/tomorrow.css">
 </head>
@@ -59,6 +60,7 @@
         <p id="sites-sub" class="font-mono text-xs text-slate-400"></p>
       </div>
       <div class="flex flex-wrap gap-2">
+        <button id="sites-monitor" type="button" class="btn">Monitoring</button>
         <button id="sites-refresh" type="button" class="btn">Muat Ulang</button>
         <button id="sites-new" type="button" class="btn btn-primary">Tambah Konfigurasi</button>
       </div>
@@ -127,6 +129,20 @@
     </div>
   </main>
 
+  <!-- View: monitoring -->
+  <main id="view-monitor" hidden class="workspace-view">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <button id="mon-back" type="button" class="btn">← Daftar vhost</button>
+      <h1 id="mon-title" tabindex="-1" class="flex-1 text-xl font-semibold"></h1>
+      <div role="group" aria-label="Rentang waktu" id="mon-ranges" class="flex gap-1"></div>
+      <label class="flex min-h-10 items-center gap-2 text-sm"><input id="mon-auto" type="checkbox" checked> Auto-refresh 15 dtk</label>
+      <button id="mon-refresh" type="button" class="btn">Muat Ulang</button>
+    </div>
+    <p id="mon-updated" class="mb-3 text-xs text-slate-400" role="status"></p>
+    <div id="mon-notice" hidden class="mb-4 rounded-md border border-amber-700 bg-amber-950 px-4 py-3 text-sm text-amber-100"></div>
+    <div id="mon-body" class="space-y-6"></div>
+  </main>
+
   </div>
   <dialog id="help-dialog" class="modal help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><div><span class="dialog-eyebrow">Mulai dengan LabServer</span><h2 id="help-title">Server Anda, dalam kendali.</h2></div><button type="button" class="icon-button" aria-label="Tutup panduan" data-close data-icon="close"></button></div><ol class="help-steps"><li><span>1</span><div><h3>Hubungkan server</h3><p>Tambahkan host, port, dan username SSH. Gunakan password atau private key, lalu verifikasi fingerprint saat koneksi pertama.</p></div></li><li><span>2</span><div><h3>Kelola konfigurasi Nginx</h3><p>Buka server untuk menyunting, menambah, menyalin, atau mengaktifkan konfigurasi vhost.</p></div></li><li><span>3</span><div><h3>Uji, lalu reload</h3><p>Simpan perubahan dan jalankan Uji sintaks. Reload tersedia setelah pengujian berhasil.</p></div></li></ol><p class="help-tip">Server memerlukan SSH dan Nginx, serta izin tulis konfigurasi atau akses sudo. LabServer tidak memasang agent.</p><div class="dialog-actions"><button type="button" class="btn btn-primary" data-close>Siap, mulai</button></div></dialog>
   <!-- Form server -->
@@ -191,6 +207,7 @@
   </dialog>
 
   <script src="vendor/ace/ace.js"></script>
+  <script src="vendor/uplot/uPlot.iife.min.js"></script>
   <script type="module" src="renderer.js"></script>
 </body>
 </html>

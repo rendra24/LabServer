@@ -1,5 +1,6 @@
 import { app, onShow, show } from "./app.js";
 import "./editor.js";
+import "./monitor.js";
 import { renderServers } from "./servers.js";
 import "./sites.js";
 import { $, askSecret, showError } from "./ui.js";

@@ -2,7 +2,7 @@
   "name": "dashboard-server-desktop",
   "productName": "LabServer",
   "version": "0.1.0",
-  "description": "LabServer \u2014 ruang kerja SSH dan Nginx untuk server Anda",
+  "description": "LabServer — ruang kerja SSH dan Nginx untuk server Anda",
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
@@ -26,7 +26,8 @@
     "electron": "44.8.0",
     "electron-builder": "26.15.3",
     "eslint": "10.13.0",
-    "globals": "17.13.0"
+    "globals": "17.13.0",
+    "uplot": "1.6.32"
   },
   "author": "LabServer",
   "build": {

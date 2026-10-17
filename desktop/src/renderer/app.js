@@ -5,13 +5,17 @@ export const app = {
   canRemember: false,
 };
 
-const VIEWS = ["servers", "sites", "editor"];
+const VIEWS = ["servers", "sites", "editor", "monitor"];
 const listeners = {};
+const leavers = {};
+let current = null;
 
 export function show(view, params) {
+  if (current && current !== view) leavers[current]?.();
+  current = view;
   for (const v of VIEWS) document.getElementById(`view-${v}`).hidden = v !== view;
   const connected = Boolean(app.server);
-  document.getElementById("current-view").textContent = { servers: "Server", sites: "Konfigurasi Nginx", editor: "Editor konfigurasi" }[view];
+  document.getElementById("current-view").textContent = { servers: "Server", sites: "Konfigurasi Nginx", editor: "Editor konfigurasi", monitor: "Monitoring" }[view];
   document.getElementById("nav-sites").disabled = !connected;
   for (const name of ["servers", "sites"]) {
     const nav = document.getElementById(`nav-${name}`);
@@ -31,6 +35,7 @@ export function show(view, params) {
 }
 
 export const onShow = (view, fn) => (listeners[view] = fn);
+export const onLeave = (view, fn) => (leavers[view] = fn);
 
 /** Setiap perubahan di server membatalkan hasil nginx -t sebelumnya. */
 export const invalidateSyntax = () => (app.syntaxValid = false);

@@ -11,4 +11,10 @@ for (const f of ["ace.js", "mode-nginx.js", "theme-tomorrow.js", "theme-tomorrow
 }
 fs.cpSync(path.join(src, "css"), path.join(dest, "css"), { recursive: true });
 fs.copyFileSync(path.join(src, "LICENSE"), path.join(dest, "LICENSE"));
+const uplotDest = path.join(__dirname, "..", "src", "renderer", "vendor", "uplot");
+fs.mkdirSync(uplotDest, { recursive: true });
+const uplotSrc = path.join(__dirname, "..", "node_modules", "uplot");
+fs.copyFileSync(path.join(uplotSrc, "dist", "uPlot.iife.min.js"), path.join(uplotDest, "uPlot.iife.min.js"));
+fs.copyFileSync(path.join(uplotSrc, "dist", "uPlot.min.css"), path.join(uplotDest, "uPlot.min.css"));
+fs.copyFileSync(path.join(uplotSrc, "LICENSE"), path.join(uplotDest, "LICENSE"));
 console.log(`Ace disalin ke ${path.relative(process.cwd(), dest)}`);
