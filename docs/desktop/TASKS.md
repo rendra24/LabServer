@@ -15,7 +15,7 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 **DoD:** Aplikasi berjalan (`npm start`), bisa connect ke server SSH uji (container) dengan password dan key, fingerprint baru diminta persetujuan dan fingerprint berubah ditolak.
 
 ## Sprint D2: Operasi Nginx Remote
-- [ ] **D2.1** Validasi nama berkas & quoting shell (unit test, termasuk payload injeksi).
+- [x] **D2.1** Validasi nama berkas & quoting shell (unit test, termasuk payload injeksi).
 - [ ] **D2.2** List `sites-available` + status `sites-enabled`; baca berkas.
 - [ ] **D2.3** Tulis atomik, tambah (eksklusif), clone; fallback `sudo` bila izin SFTP ditolak.
 - [ ] **D2.4** Aktif/nonaktif symlink (tidak menimpa entri asing).
