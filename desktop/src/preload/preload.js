@@ -11,6 +11,17 @@ contextBridge.exposeInMainWorld("api", {
     remove: call("servers:remove"),
     test: call("servers:test"),
     forgetHostKey: call("servers:forgetHostKey"),
+    connect: call("servers:connect"),
+    disconnect: call("servers:disconnect"),
+  },
+  sites: (id, op, ...args) => ipcRenderer.invoke("sites:call", id, op, ...args),
+  /** handler({requestId, server}) -> Promise<string|null> */
+  onSudoAsk(handler) {
+    ipcRenderer.removeAllListeners("sudo:ask");
+    ipcRenderer.on("sudo:ask", async (_e, req) => {
+      const value = await handler({ server: req.server });
+      ipcRenderer.invoke("sudo:answer", req.requestId, value ?? "");
+    });
   },
   pickKey: call("dialog:pickKey"),
 });

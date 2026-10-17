@@ -5,6 +5,9 @@ const { createStore } = require("./store");
 const { createHostKeyStore } = require("./hostkeys");
 const { connect } = require("./ssh");
 const { createServerService } = require("./services");
+const { createSessionManager } = require("./sessions");
+const { createNginxOps } = require("./nginx");
+const crypto = require("node:crypto");
 const { isAllowedNavigation } = require("./security");
 
 const str = (v) => (typeof v === "string" ? v : undefined);
@@ -37,6 +40,32 @@ function registerIpc() {
       return response === 1;
     },
   });
+
+  // Password sudo diminta lewat dialog di renderer (Electron tidak punya prompt teks native).
+  const pendingSudo = new Map();
+  const askSudoPassword = (id) =>
+    new Promise((resolve) => {
+      const requestId = crypto.randomUUID();
+      const timer = setTimeout(() => {
+        pendingSudo.delete(requestId);
+        resolve(null);
+      }, 120_000);
+      pendingSudo.set(requestId, (value) => {
+        clearTimeout(timer);
+        pendingSudo.delete(requestId);
+        resolve(typeof value === "string" && value ? value : null);
+      });
+      const server = svc.list().find((x) => x.id === id);
+      currentEvent.sender.send("sudo:ask", { requestId, server: server ? `${server.username}@${server.host}` : "" });
+    });
+
+  const sessions = createSessionManager({
+    open: (id, creds) => svc.open(id, creds),
+    getProfile: (id) => svc.list().find((x) => x.id === id) || null,
+    makeOps: createNginxOps,
+    askSudoPassword,
+  });
+  app.on("before-quit", () => sessions.closeAll());
 
   // Semua kanal hanya menerima panggilan dari halaman renderer aplikasi sendiri.
   const handle = (channel, fn) =>
@@ -79,6 +108,22 @@ function registerIpc() {
     });
     return response === 1 ? svc.forgetHostKey(str(id)) : { ok: false, cancelled: true };
   });
+  handle("servers:connect", (_e, id, creds) =>
+    sessions.connect(str(id), {
+      password: str(creds?.password),
+      passphrase: str(creds?.passphrase),
+      remember: creds?.remember === true,
+    }));
+  handle("servers:disconnect", (_e, id) => {
+    sessions.close(str(id));
+    return { ok: true };
+  });
+  handle("sites:call", (_e, id, op, ...args) => sessions.call(str(id), str(op), ...args));
+  handle("sudo:answer", (_e, requestId, value) => {
+    pendingSudo.get(str(requestId))?.(str(value));
+    return { ok: true };
+  });
+
   handle("dialog:pickKey", async (event) => {
     const r = await dialog.showOpenDialog(winOf(event), {
       title: "Pilih private key SSH",
