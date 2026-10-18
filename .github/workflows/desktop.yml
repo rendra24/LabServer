@@ -1,44 +1,65 @@
 name: desktop
+# Hanya macOS (pemakaian internal, tanpa code signing). Rilis: dorong tag `desktop-v<versi>`.
 on:
   push:
-    paths: ["desktop/**", ".github/workflows/desktop.yml"]
+    branches: ["**"]
+    tags: ["desktop-v*"]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { os: macos-latest, script: dist:mac }
-          - { os: windows-latest, script: dist:win }
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: desktop
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: desktop/package-lock.json }
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm test            # unit + tes SSH in-process (tes sshd/nginx dilewati tanpa container)
-      - run: npm run ${{ matrix.script }}
-      - name: Smoke test aplikasi hasil build (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
+      - run: npm test            # tes integrasi (sshd/nginx/prometheus) dilewati otomatis tanpa container
+      - name: Versi tag harus sama dengan package.json
+        if: startsWith(github.ref, 'refs/tags/desktop-v')
         run: |
-          $exe = (Resolve-Path "dist/win-unpacked/LabServer.exe").Path
-          $env:ELECTRON_RUN_AS_NODE = "1"
-          & $exe -e "const r=require('./resources/app.asar/src/main/ssh'); const s=require('./resources/app.asar/src/main/store'); if(typeof r.connect!=='function'||!s.validateServer) process.exit(1); console.log('modul dalam app.asar OK')"
-          if ($LASTEXITCODE -ne 0) { throw "smoke test gagal" }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
-          $p = Start-Process $exe -PassThru; Start-Sleep 8
-          if ($p.HasExited) { throw "aplikasi langsung keluar (exit $($p.ExitCode))" }
-          Stop-Process $p
+          v="$(node -p "require('./package.json').version")"
+          [ "$GITHUB_REF_NAME" = "desktop-v$v" ] || { echo "Tag $GITHUB_REF_NAME != desktop-v$v"; exit 1; }
+      - run: npm run dist:mac
       - uses: actions/upload-artifact@v4
         with:
-          name: labserver-${{ runner.os }}
-          path: |
-            desktop/dist/*.dmg
-            desktop/dist/*.exe
+          name: dashboard-server-macos
+          path: desktop/dist/*.dmg
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dashboard-server-macos
+      - name: Checksum
+        run: shasum -a 256 *.dmg > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Buat GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'NOTES'
+          Installer macOS (arm64 = Apple Silicon, tanpa akhiran = Intel). Belum ditandatangani/dinotarisasi (pemakaian internal).
+
+          Saat pertama dibuka: klik kanan aplikasi → Open → Open. Jika masih diblokir:
+          `xattr -dr com.apple.quarantine "/Applications/Dashboard Server.app"`
+
+          Verifikasi unduhan dengan `shasum -a 256 -c SHA256SUMS.txt`.
+          NOTES
+          gh release create "$TAG" *.dmg SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --title "$TAG" --notes-file notes.md --verify-tag

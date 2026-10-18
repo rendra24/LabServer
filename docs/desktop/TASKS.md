@@ -34,7 +34,7 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 
 ## Sprint D4: Paket & Distribusi
 - [x] **D4.1** `electron-builder`: macOS `.dmg` (arm64 + x64) dibangun dan dijalankan.
-- [ ] **D4.2** Windows `.exe` (NSIS): build (cross-build atau GitHub Actions `windows-latest`) dan uji jalan.
+- [ ] **D4.2** *(ditunda 2026-10-18: pemakaian internal hanya macOS; lihat DECISIONS #31)* Windows `.exe` (NSIS): build (cross-build atau GitHub Actions `windows-latest`) dan uji jalan.
   - *Status 2026-10-17:* `Dashboard Server Setup 0.1.0.exe` berhasil di-cross-build dari macOS (PE32, asar berisi ssh2 + Ace). **Belum dijalankan di Windows**; workflow CI dengan smoke test sudah ditulis (`.github/workflows/desktop.yml`) tetapi belum dieksekusi.
 - [x] **D4.3** README desktop: instalasi, menambah server, kebutuhan izin di server (sudoers), keterbatasan (tanpa code signing).
 
@@ -73,3 +73,10 @@ Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika
 - [x] **M3.2** Tes integrasi end-to-end (container Ubuntu dengan paket apt `prometheus`, `prometheus-node-exporter`, `prometheus-nginx-exporter`).
 
 **DoD:** Panduan diikuti di container dan menghasilkan dashboard berisi data.
+
+---
+
+## Distribusi internal (2026-10-18)
+- [x] **R1** Pengecek versi (`update-check.js`, tes) + IPC `update:check` + tombol "Periksa pembaruan".
+- [x] **R2** Workflow rilis macOS-only (tag `desktop-v*` -> GitHub Release) dan `desktop/RELEASING.md`.
+  - *Belum diverifikasi:* workflow belum pernah berjalan di GitHub (repo belum ada); pengecek belum diuji ke API GitHub sungguhan (hanya dengan fetch tiruan); tombol di sidebar belum dilihat di GUI.
