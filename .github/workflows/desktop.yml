@@ -52,10 +52,10 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           cat > notes.md <<'NOTES'
-          Installer macOS (arm64 = Apple Silicon, tanpa akhiran = Intel). Belum ditandatangani/dinotarisasi (pemakaian internal).
+          Installer macOS: `LabServer-macOS-arm64.dmg` (Apple Silicon M1/M2/M3/M4) dan `LabServer-macOS-x64.dmg` (Intel). Belum ditandatangani/dinotarisasi (pemakaian internal).
 
           Saat pertama dibuka: klik kanan aplikasi → Open → Open. Jika masih diblokir:
-          `xattr -dr com.apple.quarantine "/Applications/Dashboard Server.app"`
+          `xattr -dr com.apple.quarantine "/Applications/LabServer.app"`
 
           Verifikasi unduhan dengan `shasum -a 256 -c SHA256SUMS.txt`.
           NOTES

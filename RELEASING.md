@@ -14,7 +14,7 @@ git commit -am "desktop: versi 0.1.1"      # sesuaikan angka
 git tag desktop-v0.1.1                     # harus persis desktop-v + versi package.json
 git push origin HEAD desktop-v0.1.1
 ```
-Workflow `.github/workflows/desktop.yml` (macOS) lalu: lint → tes → build `.dmg` arm64 + Intel → membuat GitHub Release berisi dua `.dmg` dan `SHA256SUMS.txt`. Tag yang tidak sama dengan versi di `package.json` ditolak.
+Workflow `.github/workflows/desktop.yml` (macOS) lalu: lint → tes → build `.dmg` arm64 + Intel (`LabServer-macOS-arm64.dmg`, `LabServer-macOS-x64.dmg`) → membuat GitHub Release berisi dua `.dmg` dan `SHA256SUMS.txt`. Tag yang tidak sama dengan versi di `package.json` ditolak.
 
 ## Format versi
 Semver `MAJOR.MINOR.PATCH`. Hanya tag berawalan `desktop-v` yang dihitung sebagai rilis aplikasi desktop; draft dan pre-release diabaikan oleh pengecek.

@@ -1,7 +1,7 @@
 {
   "name": "dashboard-server-desktop",
   "productName": "LabServer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/rendra24/LabServer.git"
@@ -74,7 +74,8 @@
       "icon": "build/icon.icns"
     },
     "dmg": {
-      "title": "LabServer ${version}"
+      "title": "LabServer ${version}",
+      "artifactName": "LabServer-macOS-${arch}.dmg"
     },
     "win": {
       "target": [
