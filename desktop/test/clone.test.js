@@ -1,4 +1,4 @@
-// Logika clone di renderer (salinan dari frontend web) + parser server_name.
+// Logika clone di renderer + parser server_name.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("node:path");
