@@ -33,9 +33,15 @@ export const FILENAME_RE = /^[A-Za-z0-9._-]+$/;
 export const validFilename = (n) => n.length >= 1 && n.length <= 255 && FILENAME_RE.test(n) && !/^[.-]/.test(n);
 export const DOMAIN_RE = /^[A-Za-z0-9.-]+$/;
 
-/** Dialog password/passphrase/sudo. Resolve {value, remember} atau null bila dibatalkan. */
-export function askSecret({ title, label, description, allowRemember, submitLabel = "Hubungkan" }) {
-  const d = $("secret-dialog");
+const secretQueue = [];
+let activeSecret = null;
+
+function showNextSecret() {
+  if (activeSecret || !secretQueue.length) return;
+  const job = secretQueue.shift();
+  activeSecret = job;
+  const { title, label, description, allowRemember, submitLabel = "Hubungkan" } = job.options;
+  const d = $("secret-dialog"), form = $("secret-form");
   $("secret-title").textContent = title;
   $("secret-label").textContent = label;
   $("secret-desc").textContent = description || "";
@@ -43,23 +49,52 @@ export function askSecret({ title, label, description, allowRemember, submitLabe
   $("remember").checked = false;
   $("remember-row").hidden = !allowRemember;
   $("secret-submit").textContent = submitLabel;
+  let settled = false, answer = null;
+  const finish = () => {
+    form.removeEventListener("submit", onSubmit);
+    d.removeEventListener("close", onClose);
+    job.options.signal?.removeEventListener("abort", job.abort);
+    activeSecret = null;
+    job.resolve(answer);
+    showNextSecret();
+  };
+  job.done = value => {
+    if (settled) return;
+    settled = true;
+    answer = value;
+    $("secret-input").value = "";
+    // Wait for this dialog's close event before attaching the next request's listeners.
+    if (d.open) d.close();
+    else finish();
+  };
+  const onSubmit = e => {
+    e.preventDefault();
+    job.done({ value: $("secret-input").value, remember: $("remember").checked });
+  };
+  const onClose = () => settled ? finish() : job.done(null);
+  form.addEventListener("submit", onSubmit);
+  d.addEventListener("close", onClose);
   d.showModal();
   $("secret-input").focus();
-  return new Promise((resolve) => {
-    const form = $("secret-form");
-    const done = (value) => {
-      form.removeEventListener("submit", onSubmit);
-      d.removeEventListener("close", onClose);
-      if (d.open) d.close();
-      resolve(value);
+}
+
+/** Dialog password/passphrase/sudo, serialized across callers. Resolves null on cancellation. */
+export function askSecret(options) {
+  if (options.signal?.aborted) return Promise.resolve(null);
+  return new Promise(resolve => {
+    const job = { options, resolve };
+    job.abort = () => {
+      if (activeSecret === job) job.done(null);
+      else {
+        const index = secretQueue.indexOf(job);
+        if (index !== -1) secretQueue.splice(index, 1);
+        options.signal?.removeEventListener("abort", job.abort);
+        resolve(null);
+      }
     };
-    const onSubmit = (e) => {
-      e.preventDefault();
-      done({ value: $("secret-input").value, remember: $("remember").checked });
-    };
-    const onClose = () => done(null);
-    form.addEventListener("submit", onSubmit);
-    d.addEventListener("close", onClose);
+    options.signal?.addEventListener("abort", job.abort, { once: true });
+    secretQueue.push(job);
+    showNextSecret();
   });
 }
 

@@ -61,7 +61,7 @@ test("tanpa 'ingat', password tidak disimpan", async () => {
   assert.equal(store.getSecret(profile.id, "password"), null);
 });
 
-test("gagal: kode & pesan ramah; password tersimpan yang salah dihapus", async () => {
+test("login ditolak tidak menghapus password tersimpan", async () => {
   const { svc, store } = setup(() => {
     throw new SshError("AUTH_FAILED");
   });
@@ -71,7 +71,17 @@ test("gagal: kode & pesan ramah; password tersimpan yang salah dihapus", async (
   assert.equal(r.ok, false);
   assert.equal(r.code, "AUTH_FAILED");
   assert.match(r.message, /Autentikasi/);
-  assert.equal(store.getSecret(profile.id, "password"), null);
+  await svc.testConnection(profile.id, { password: "password-baru-ditolak", remember: true });
+  assert.equal(store.getSecret(profile.id, "password"), "lama-salah");
+});
+
+test("passphrase ditolak dan password baru gagal tidak menimpa kredensial lama", async () => {
+  const { svc, store } = setup(() => { throw new SshError("BAD_PASSPHRASE"); });
+  const { profile } = svc.save({ ...base, auth: "key", keyPath: path.resolve("/tmp/key") });
+  store.setSecret(profile.id, "passphrase", "passphrase-lama");
+  await svc.testConnection(profile.id, {});
+  await svc.testConnection(profile.id, { passphrase: "passphrase-baru", remember: true });
+  assert.equal(store.getSecret(profile.id, "passphrase"), "passphrase-lama");
 });
 
 test("error tak terduga tidak membocorkan detail", async () => {

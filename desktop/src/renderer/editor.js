@@ -10,6 +10,7 @@ let baseline = "";
 let editor = null;
 
 const isDirty = () => Boolean(editor) && (mode !== "edit" || editor.getValue() !== baseline);
+export const guardNginxClose = () => !isDirty() || window.confirm('Ada konfigurasi Nginx yang belum disimpan. Tutup aplikasi dan buang perubahan?');
 
 const diag = createDiag(
   { testBtn: $("ed-test"), reloadBtn: $("ed-reload"), log: $("ed-log") },

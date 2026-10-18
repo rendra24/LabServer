@@ -90,7 +90,7 @@ async function openServer(s, result) {
   if (!r.ok) return showResult(result, s, r);
   app.server = (await api.servers.list()).find((x) => x.id === s.id);
   app.syntaxValid = false;
-  show("sites");
+  show("monitor");
 }
 
 // ---------- form server ----------

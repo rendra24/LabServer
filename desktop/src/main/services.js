@@ -14,24 +14,17 @@ function createServerService({ store, hostKeys, connect, confirmHostKey }) {
     if (!profile) throw Object.assign(new Error("Server tidak ditemukan."), { code: "NOT_FOUND" });
     const password = creds.password || (profile.auth === "password" ? store.getSecret(id, "password") : null);
     const passphrase = creds.passphrase || (profile.auth === "key" ? store.getSecret(id, "passphrase") : null);
-    try {
-      const conn = await connect(profile, {
-        password,
-        passphrase,
-        hostKeys,
-        onUnknownHost: (info) => confirmHostKey({ ...info, name: profile.name }),
-      });
-      if (creds.remember) {
-        if (creds.password) store.setSecret(id, "password", creds.password);
-        if (creds.passphrase) store.setSecret(id, "passphrase", creds.passphrase);
-      }
-      return conn;
-    } catch (e) {
-      // Secret tersimpan yang terbukti salah dibuang supaya pengguna diminta ulang.
-      if (e.code === "AUTH_FAILED" && !creds.password) store.clearSecrets(id, "password");
-      if (e.code === "BAD_PASSPHRASE" && !creds.passphrase) store.clearSecrets(id, "passphrase");
-      throw e;
+    const conn = await connect(profile, {
+      password,
+      passphrase,
+      hostKeys,
+      onUnknownHost: (info) => confirmHostKey({ ...info, name: profile.name }),
+    });
+    if (creds.remember) {
+      if (creds.password) store.setSecret(id, "password", creds.password);
+      if (creds.passphrase) store.setSecret(id, "passphrase", creds.passphrase);
     }
+    return conn;
   }
 
   return {

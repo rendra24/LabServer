@@ -84,22 +84,16 @@ async function setEnabled(s, on, button) {
   await loadSites();
 }
 
-$("sites-back").addEventListener("click", () => {
-  api.servers.disconnect(app.server.id);
-  app.server = null;
-  show("servers");
-});
 $("sites-refresh").addEventListener("click", loadSites);
 $("sites-new").addEventListener("click", () => show("editor", { mode: "new" }));
-$("sites-monitor").addEventListener("click", () => show("monitor"));
 
 let shownServerId = null;
 
 onShow("sites", () => {
   if (shownServerId !== app.server.id) $("sites-log").replaceChildren(); // log milik server lain tidak relevan
   shownServerId = app.server.id;
-  $("sites-title").textContent = app.server.name;
-  $("sites-sub").textContent = `${app.server.username}@${app.server.host}:${app.server.port} · ${app.server.nginx.available}`;
+  $("sites-title").textContent = "Konfigurasi Nginx";
+  $("sites-sub").textContent = app.server.nginx.available;
   diag.refresh();
   loadSites();
 });

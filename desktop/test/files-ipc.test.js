@@ -1,0 +1,67 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const os=require('node:os');
+const path=require('node:path');
+const Module=require('node:module');
+const {EventEmitter}=require('node:events');
+const {pathToFileURL}=require('node:url');
+const {createStore}=require('../src/main/store');
+const {createHostKeyStore}=require('../src/main/hostkeys');
+const {startServer}=require('./helpers/sshServer');
+const {serverToolsFixture}=require('./helpers/serverTools');
+
+test('actual main IPC rejects wrong frames; native close/disconnect guards preserve running transfers',async t=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'labserver-main-ipc-'));
+  const root=path.join(dir,'remote'),local=path.join(dir,'local');
+  await fs.mkdir(path.join(root,'home/deploy'),{recursive:true});await fs.mkdir(local);
+  await fs.writeFile(path.join(local,'large.bin'),Buffer.alloc(4*1024*1024,65));
+  const tools=serverToolsFixture((stream,command)=>{stream.write(`ran:${command}\n`);stream.exit(0);stream.end();});
+  const server=await startServer({sftpRoot:root,execHandler:tools.execHandler});
+  const store=createStore(dir,null);
+  const profile=store.save({name:'Fixture',host:'127.0.0.1',port:server.port,username:'deploy',auth:'password'});
+  createHostKeyStore(dir).set(profile.host,profile.port,server.fingerprint);
+  const handlers=new Map();const sender=new EventEmitter();const packets=[];
+  const event={sender,senderFrame:{url:pathToFileURL(path.join(__dirname,'../src/renderer/index.html')).href}};
+  const win={webContents:sender};let allowRenderer=true;let nativeResponse=0;let prompts=0;let holdTool=false,resolveTool;
+  sender.isDestroyed=()=>false;
+  sender.send=(channel,packet)=>{if(channel==='app:close-request')setImmediate(()=>handlers.get('app:close-answer')(event,packet,allowRenderer));else packets.push(packet);};
+  const original=Module._load;
+  t.mock.method(Module,'_load',function(request,...args){if(request==='electron')return{app:{getPath:()=>dir},BrowserWindow:{fromWebContents:()=>win},safeStorage:{isEncryptionAvailable:()=>false},ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{showOpenDialog:async()=>({canceled:false,filePaths:[local]}),showMessageBox:async(_win,options)=>{prompts++;if(holdTool&&(options.message.includes('Restart web')||options.message.includes('Pasang SSL')))return new Promise(resolve=>resolveTool=resolve);return{response:nativeResponse};}}};return original.call(this,request,...args);});
+  const {registerIpc}=require('../src/main/ipc');const lifecycle=registerIpc();
+  t.after(async()=>{lifecycle.dispose();sender.emit('destroyed');await server.close();await new Promise(r=>setTimeout(r,20));await fs.rm(dir,{recursive:true,force:true});});
+  const invoke=(channel,...args)=>handlers.get(channel)(event,...args);
+  assert.throws(()=>handlers.get('files:pick')({...event,senderFrame:{url:'https://evil.test'}},'local'),/Pengirim/);
+  assert.throws(()=>handlers.get('system:call')({...event,senderFrame:{url:'https://evil.test'}},profile.id,'services',{requestId:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'}),/Pengirim/);
+  for(const feature of ['docker','ssl'])assert.throws(()=>handlers.get(`${feature}:call`)({...event,senderFrame:{url:'https://evil.test'}},profile.id,'list',{requestId:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'}),/Pengirim/);
+  assert.throws(()=>handlers.get('tunnels:call')({...event,senderFrame:{url:'https://evil.test'}},profile.id,'list'),/Pengirim/);
+  await invoke('app:info');allowRenderer=false;assert.equal(await lifecycle.canClose(win),false);assert.equal(prompts,0);
+  assert.equal((await invoke('servers:connect',profile.id,{password:'pw-123'})).ok,true);
+  const opened=await invoke('files:call',profile.id,'open');const contextId=opened.data.contextId;
+  const picked=await invoke('files:pick','local');
+  const start=await invoke('files:call',profile.id,'start',{contextId,direction:'upload',sources:[{grantId:picked.data.grants[0].id,relative:'large.bin'}],destination:{path:'/home/deploy'}});
+  assert.equal(start.ok,true);
+  allowRenderer=true;assert.equal(await lifecycle.canClose(win),false);assert.equal(prompts,1);
+  const refused=await invoke('servers:disconnect',profile.id);assert.equal(refused.cancelled,true);
+  assert.equal((await invoke('files:call',profile.id,'list',{contextId,path:'/home/deploy'})).ok,true);
+  await invoke('files:call',profile.id,'cancel',{contextId,id:start.data.ids[0]});
+  for(let i=0;i<100;i++){if(packets.some(p=>p.job?.id===start.data.ids[0]&&['cancelled','complete'].includes(p.job.status)))break;await new Promise(r=>setTimeout(r,10));}
+  for(const [feature,op,input] of [['docker','action',{id:tools.ID,action:'restart'}],['ssl','issue',{domains:['app.example.com'],email:'owner@example.com',redirect:true,agreeTerms:true}]]) {
+    holdTool=true;resolveTool=null;
+    const running=invoke(`${feature}:call`,profile.id,op,{requestId:require('node:crypto').randomUUID(),...input});
+    for(let i=0;i<100&&!resolveTool;i++)await new Promise(r=>setTimeout(r,10));
+    assert.equal(typeof resolveTool,'function');
+    assert.equal(await lifecycle.canClose(win),false,`${feature} confirmation keeps close guard active`);
+    assert.equal((await invoke('servers:disconnect',profile.id)).cancelled,true);
+    assert.equal((await invoke('files:call',profile.id,'list',{contextId,path:'/home/deploy'})).ok,true);
+    resolveTool({response:0});assert.equal((await running).cancelled,true);holdTool=false;
+  }
+  const net=require('node:net');const portProbe=net.createServer();await new Promise(r=>portProbe.listen(0,'127.0.0.1',r));const localPort=portProbe.address().port;await new Promise(r=>portProbe.close(r));
+  const tunnel=await invoke('tunnels:call',profile.id,'save',{name:'Database',localPort,remoteHost:'127.0.0.1',remotePort:3306});const tunnelId=tunnel.data.tunnels[0].id;
+  assert.equal((await invoke('tunnels:call',profile.id,'start',{id:tunnelId})).ok,true);
+  assert.equal(await lifecycle.canClose(win),false,'native close cancellation preserves tunnels');
+  assert.equal((await invoke('servers:disconnect',profile.id)).cancelled,true);
+  assert.equal((await invoke('tunnels:call',profile.id,'list')).data.tunnels[0].status,'listening');
+  nativeResponse=1;assert.equal((await invoke('servers:disconnect',profile.id)).ok,true);
+  const rebound=net.createServer();await new Promise((resolve,reject)=>{rebound.once('error',reject);rebound.listen(localPort,'127.0.0.1',resolve);});await new Promise(r=>rebound.close(r));
+});

@@ -1,0 +1,47 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const { EventEmitter } = require('node:events');
+const { startServer } = require('./helpers/sshServer');
+const { enableFixtureExtensions } = require('./helpers/sftpServer');
+const { connect } = require('../src/main/ssh');
+const { createSessionManager } = require('../src/main/sessions');
+const { registerFilesIpc } = require('../src/main/files-ipc');
+
+test('real SSH/SFTP + guarded broker: native grants, recursive transfer, editor, stale context and Nginx invalidation', async t => {
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'labserver-files-ssh-'));
+  const root=path.join(dir,'remote'), source=path.join(dir,'local');
+  await fs.mkdir(path.join(root,'home/deploy'),{recursive:true});
+  await fs.mkdir(path.join(source,'folder/empty'),{recursive:true});
+  await fs.writeFile(path.join(source,'folder/.env'),'fixture-hidden');
+  await fs.writeFile(path.join(root,'home/deploy/config.json'),'{"v":1}\n');
+  const server=await startServer({sftpRoot:root});
+  const profile={id:'vps',nginx:{available:'/home/deploy',enabled:'/etc/nginx/sites-enabled'}};
+  const sessions=createSessionManager({open:async()=>enableFixtureExtensions(await connect({host:'127.0.0.1',port:server.port,username:'deploy',auth:'password'},{password:'pw-123',hostKeys:{get:()=>server.fingerprint}})),getProfile:()=>profile,makeOps:()=>({})});
+  const sender=new EventEmitter();const events=[];sender.send=(_channel,packet)=>events.push(packet);sender.isDestroyed=()=>false;
+  t.after(async()=>{sender.emit('destroyed');sessions.closeAll();await server.close();await fs.rm(dir,{recursive:true,force:true});});
+  assert.equal((await sessions.connect('vps',{})).ok,true);
+  const handlers={};
+  registerFilesIpc({handle:(channel,fn)=>{handlers[channel]=fn;},sessions,store:{get:()=>profile},winOf:()=>null,dialog:{showOpenDialog:async()=>({canceled:false,filePaths:[source]}),showMessageBox:async()=>({response:1})}});
+  const call=(op,args={})=>handlers['files:call']({sender},'vps',op,args);
+  const opened=await call('open');assert.equal(opened.data.home,'/home/deploy');
+  const contextId=opened.data.contextId;
+  assert.equal((await call('list',{contextId:'wrong',path:'/home/deploy'})).ok,false);
+  const picked=await handlers['files:pick']({sender},'local');const grant=picked.data.grants[0];
+  assert.equal((await handlers['files:local']({sender},'list','not-granted','')).ok,false);
+  const uploaded=await call('start',{contextId,direction:'upload',sources:[{grantId:grant.id,relative:'folder'}],destination:{path:'/home/deploy'}});
+  assert.equal(uploaded.ok,true);
+  for(let i=0;i<300;i++){if(events.some(e=>e.job?.id===uploaded.data.ids[0]&&['complete','failed','partial'].includes(e.job.status)))break;await new Promise(r=>setTimeout(r,10));}
+  assert.equal(events.findLast(e=>e.job?.id===uploaded.data.ids[0]).job.status,'complete');
+  assert.equal(await fs.readFile(path.join(root,'home/deploy/folder/.env'),'utf8'),'fixture-hidden');
+  const read=await call('read',{contextId,path:'/home/deploy/config.json'});assert.equal(read.ok,true);
+  const saved=await call('save',{contextId,path:'/home/deploy/config.json',text:'{"v":2}\n',revision:read.data.revision});assert.equal(saved.ok,true,saved.message);
+  assert.equal(await fs.readFile(path.join(root,'home/deploy/config.json'),'utf8'),'{"v":2}\n');
+  assert.ok(events.some(e=>e.type==='changed'&&e.invalidateSyntax));
+  sessions.close('vps');
+  await sessions.connect('vps',{});
+  const next=await call('open');assert.notEqual(next.data.contextId,contextId);
+  assert.equal((await call('save',{contextId,path:'/home/deploy/config.json',text:'bad'})).ok,false);
+});

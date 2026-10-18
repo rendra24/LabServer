@@ -1,6 +1,6 @@
 import { app, onLeave, onShow, show } from "./app.js";
 import { formatValue, summarize } from "./format.js";
-import { $, announce, el, showError } from "./ui.js";
+import { $, announce, busy, el, showError } from "./ui.js";
 
 const api = window.api;
 const RANGES = [["15m", "15 mnt"], ["1h", "1 jam"], ["6h", "6 jam"], ["24h", "24 jam"], ["7d", "7 hari"]];
@@ -153,7 +153,7 @@ function render(data) {
   if (!data.availability.node) missing.push("panel Host: pasang node_exporter dan tambahkan sebagai target scrape Prometheus");
   if (!data.availability.nginx) missing.push("panel Nginx: pasang nginx-prometheus-exporter (dengan stub_status aktif) dan scrape");
   $("mon-notice").hidden = missing.length === 0;
-  $("mon-notice").textContent = missing.length ? `Belum ada data untuk ${missing.join("; ")}. Lihat panduan di README.` : "";
+  $("mon-notice").textContent = missing.length ? `Belum ada data untuk ${missing.join("; ")}. Buka Panduan install Prometheus di atas untuk instalasi dasar.` : "";
 }
 
 // ---------- muat data ----------
@@ -162,7 +162,11 @@ async function load() {
   const r = await api.monitor(app.server.id, "load", range);
   if (id !== requestId || $("view-monitor").hidden) return; // jawaban basi / sudah pindah view
   if (!r.ok) {
-    if (r.code === "NOT_CONNECTED") return show("servers");
+    if (r.code === "NOT_CONNECTED") {
+      app.server = null;
+      show("servers");
+      return showError(r.message);
+    }
     showError(r.message);
     $("mon-updated").textContent = "Gagal memuat. Mencoba lagi pada refresh berikutnya.";
     return;
@@ -179,7 +183,11 @@ async function testPrometheus() {
   box.replaceChildren(el("p", { text: "Menguji koneksi ke Prometheus…", cls: "text-slate-300" }));
   const r = await api.monitor(app.server.id, "test");
   if (!r.ok) {
-    if (r.code === "NOT_CONNECTED") return show("servers");
+    if (r.code === "NOT_CONNECTED") {
+      app.server = null;
+      show("servers");
+      return showError(r.message);
+    }
     box.replaceChildren(el("p", { text: `✘ ${r.message}`, cls: "text-red-300" }));
     return;
   }
@@ -194,8 +202,19 @@ async function testPrometheus() {
   );
 }
 
+$("mon-install").addEventListener("click", () => {
+  $("mon-install-copy-status").textContent = "";
+  if (!$("mon-install-dialog").open) $("mon-install-dialog").showModal();
+});
+$("mon-install-copy").addEventListener("click", async () => {
+  const status = $("mon-install-copy-status");
+  status.textContent = "";
+  try {
+    await busy($("mon-install-copy"), "Menyalin…", () => navigator.clipboard.writeText($("mon-install-command").textContent));
+    status.textContent = "Command tersalin. Paste ke terminal VPS untuk menjalankannya.";
+  } catch { status.textContent = "Tidak dapat menyalin. Pilih teks command dan salin secara manual."; }
+});
 $("mon-test").addEventListener("click", testPrometheus);
-$("mon-back").addEventListener("click", () => show("sites"));
 $("mon-refresh").addEventListener("click", load);
 $("mon-auto").addEventListener("change", startTimer);
 window.addEventListener("resize", () => {
@@ -204,7 +223,7 @@ window.addEventListener("resize", () => {
 
 onShow("monitor", () => {
   showError("");
-  $("mon-title").textContent = `Monitoring · ${app.server.name}`;
+  $("mon-title").textContent = "Dashboard monitoring";
   $("mon-notice").hidden = true;
   $("mon-targets").hidden = true;
   $("mon-body").replaceChildren(el("p", { text: "Memuat data…", cls: "text-sm text-slate-400" }));

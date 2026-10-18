@@ -26,5 +26,6 @@ test("index.html memasang CSP ketat tanpa sumber remote", () => {
   const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
   assert.match(csp, /default-src 'none'/);
   assert.match(csp, /script-src 'self'/);
+  assert.equal(csp.split(";").map((rule) => rule.trim()).find((rule) => rule.startsWith("script-src ")), "script-src 'self'");
   assert.doesNotMatch(csp, /unsafe-eval|https?:|\*/);
 });

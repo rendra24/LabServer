@@ -1,6 +1,16 @@
 import { app, onShow, show } from "./app.js";
 import "./editor.js";
 import "./monitor.js";
+import "./update.js";
+import "./terminal.js";
+import "./backup.js";
+import { guardDnsChanges } from './dns.js';
+import './system.js';
+import './docker.js';
+import './ssl.js';
+import './tunnels.js';
+import { guardFileChanges } from './files.js';
+import { guardNginxClose } from './editor.js';
 import { renderServers } from "./servers.js";
 import "./sites.js";
 import { $, askSecret, showError } from "./ui.js";
@@ -25,18 +35,53 @@ try { sidebarHidden = localStorage.getItem("labserver-sidebar-hidden") === "true
 setSidebarHidden(sidebarHidden);
 $("sidebar-toggle").addEventListener("click", () => setSidebarHidden(!$("sidebar").hidden));
 
-function goToServers() {
+async function goToServers() {
   if (!$("view-editor").hidden) $("ed-back").click();
   if (!$("view-editor").hidden) return;
-  if (app.server) $("sites-back").click();
-  else show("servers");
+  if (app.server) {
+    if (!await guardFileChanges() || !app.server) return;
+    const result = await window.api.servers.disconnect(app.server.id);
+    if (!result.ok) return;
+    app.server = null;
+  }
+  show("servers");
 }
 
-$("nav-servers").addEventListener("click", goToServers);
-$("brand-home").addEventListener("click", (e) => { e.preventDefault(); goToServers(); });
+function openServers() {
+  if (!$("view-dns").hidden && app.server) show(app.serverView || 'monitor');
+  else goToServers();
+}
+$("nav-servers").addEventListener("click", openServers);
+$("server-disconnect").addEventListener("click", goToServers);
+$("nav-dns").addEventListener("click", () => {
+  if (!$("view-editor").hidden) $("ed-back").click();
+  if (!$("view-editor").hidden) return;
+  show('dns');
+});
+$("brand-home").addEventListener("click", (e) => { e.preventDefault(); openServers(); });
+$("nav-terminal").addEventListener("click", () => {
+  if (!$("view-editor").hidden) $("ed-back").click();
+  if (!$("view-editor").hidden) return;
+  if (app.server) show("terminal");
+});
+$("nav-files").addEventListener('click', () => {
+  if (!$("view-editor").hidden) $("ed-back").click();
+  if (!$("view-editor").hidden) return;
+  if (app.server) show('files');
+});
+$("nav-monitor").addEventListener("click", () => {
+  if (!$("view-editor").hidden) $("ed-back").click();
+  if (!$("view-editor").hidden) return;
+  if (app.server) show("monitor");
+});
 $("nav-sites").addEventListener("click", () => {
   if (!$("view-editor").hidden) $("ed-back").click();
   else if (app.server) show("sites");
+});
+for (const view of ['services', 'logs', 'docker', 'ssl', 'tunnels']) $(`nav-${view}`).addEventListener('click', () => {
+  if (!$("view-editor").hidden) $("ed-back").click();
+  if (!$("view-editor").hidden) return;
+  if (app.server) show(view);
 });
 $("help").addEventListener("click", () => $("help-dialog").showModal());
 
@@ -48,16 +93,23 @@ document.addEventListener("keydown", (e) => {
 });
 $("server-search").nextElementSibling.textContent = /Mac/.test(navigator.platform) ? "⌘ K" : "Ctrl K";
 
-window.api.onSudoAsk(async ({ server }) => {
+const sudoRequests = new Map();
+window.api.onSudoAsk(async ({ requestId, server }) => {
+  const controller = new AbortController();
+  sudoRequests.set(requestId, controller);
   const answer = await askSecret({
     title: "Password sudo",
     label: "Password sudo",
     description: `Perintah ini butuh hak root di ${server}. Password hanya disimpan di memori selama sesi ini.`,
     allowRemember: false,
     submitLabel: "Lanjutkan",
+    signal: controller.signal,
   });
+  sudoRequests.delete(requestId);
   return answer?.value ?? null;
 });
+window.api.onSudoCancel(requestId => sudoRequests.get(requestId)?.abort());
+window.api.onCloseRequest(async () => guardDnsChanges() && (await guardFileChanges()) && guardNginxClose());
 
 onShow("servers", () => renderServers().catch((e) => showError(e.message)));
 

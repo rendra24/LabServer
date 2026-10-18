@@ -10,6 +10,9 @@ app.setName("Dashboard Server");
 const dataDir = path.join(app.getPath("appData"), "Dashboard Server");
 fs.mkdirSync(dataDir, { recursive: true });
 app.setPath("userData", dataDir);
+let lifecycle;
+let quitAfterClose = false;
+let quitting = false;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,13 +33,26 @@ function createWindow() {
     if (url.startsWith("https://")) shell.openExternal(url);
     return { action: "deny" };
   });
+  let approved = false;
+  let checking = false;
+  win.on('close', (event) => {
+    if (approved || win.webContents.isDestroyed()) return;
+    event.preventDefault();
+    if (checking) return;
+    checking = true;
+    lifecycle.canClose(win).then(allowed => {
+      checking = false;
+      if (!allowed) { quitAfterClose = false; return; }
+      approved = true; lifecycle.dispose(); win.close();
+    }).catch(() => { checking = false; quitAfterClose = false; });
+  });
   win.loadFile(path.join(RENDERER_DIR, "index.html"));
   return win;
 }
 
 app.whenReady().then(() => {
   applyBranding();
-  registerIpc();
+  lifecycle = registerIpc();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -44,5 +60,10 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  if (quitAfterClose || process.platform !== "darwin") { quitting = true; app.quit(); }
+});
+app.on('before-quit', (event) => {
+  if (quitting || !BrowserWindow.getAllWindows().length) return;
+  event.preventDefault(); quitAfterClose = true;
+  BrowserWindow.getAllWindows().forEach(win => win.close());
 });
