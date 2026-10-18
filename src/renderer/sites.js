@@ -1,9 +1,10 @@
 import { app, invalidateSyntax, onShow, show } from "./app.js";
 import { createDiag } from "./diag.js";
 import { $, announce, el, showError } from "./ui.js";
+import { readHistory, historyLabel } from "./history.js";
 
 const api = window.api;
-let sites = [];
+let sites = [], generation = 0, stale = false;
 
 const diag = createDiag(
   { testBtn: $("sites-test"), reloadBtn: $("sites-reload"), log: $("sites-log") },
@@ -23,7 +24,7 @@ function row(s) {
     },
     el("span", { cls: `inline-block size-5 rounded-full bg-white transition-transform ${s.enabled ? "translate-x-6" : "translate-x-1"}`, attrs: { "aria-hidden": "true" } }),
   );
-  toggle.disabled = s.conflict;
+  toggle.disabled = s.conflict || stale;
   toggle.addEventListener("click", () => setEnabled(s, !s.enabled, toggle));
   const edit = el("button", { text: "Edit", cls: "btn", attrs: { type: "button" } });
   edit.addEventListener("click", () => show("editor", { mode: "edit", name: s.name }));
@@ -52,21 +53,30 @@ function render() {
 }
 
 export async function loadSites() {
+  const owner = app.server, ticket = ++generation;
   showError("");
-  $("sites-rows").replaceChildren(
-    el("tr", {}, el("td", { cls: "px-4 py-4", attrs: { colspan: "5" } }, el("div", { cls: "h-4 animate-pulse rounded bg-slate-800" }))),
-  );
-  const r = await api.sites(app.server.id, "list");
+  const cached = await readHistory(owner, "sites");
+  if (ticket !== generation || owner !== app.server) return;
+  if (cached) {
+    sites = cached.data; stale = true; render(); historyLabel($("sites-history"), cached.recordedAt, "refreshing");
+  } else {
+    $("sites-rows").replaceChildren(
+      el("tr", {}, el("td", { cls: "px-4 py-4", attrs: { colspan: "5" } }, el("div", { cls: "h-4 animate-pulse rounded bg-slate-800" }))),
+    );
+  }
+  const r = await api.sites(owner.id, "list");
+  if (ticket !== generation || owner !== app.server) return;
   if (!r.ok) {
-    $("sites-rows").replaceChildren();
     showError(r.message);
+    if (cached) historyLabel($("sites-history"), cached.recordedAt, "failed");
+    else { stale = false; $("sites-rows").replaceChildren(); }
     if (r.code === "NOT_CONNECTED") {
       app.server = null;
       show("servers");
     }
     return;
   }
-  sites = r.data;
+  sites = r.data; stale = false; historyLabel($("sites-history"));
   render();
   announce(`${sites.length} berkas konfigurasi.`);
 }
@@ -90,7 +100,7 @@ $("sites-new").addEventListener("click", () => show("editor", { mode: "new" }));
 let shownServerId = null;
 
 onShow("sites", () => {
-  if (shownServerId !== app.server.id) $("sites-log").replaceChildren(); // log milik server lain tidak relevan
+  if (shownServerId !== app.server.id) { $("sites-log").replaceChildren(); sites = []; stale = false; historyLabel($("sites-history")); } // data dan log milik server lain tidak relevan
   shownServerId = app.server.id;
   $("sites-title").textContent = "Konfigurasi Nginx";
   $("sites-sub").textContent = app.server.nginx.available;

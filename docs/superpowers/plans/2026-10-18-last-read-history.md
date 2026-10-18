@@ -10,8 +10,8 @@ User requested persistent last-read history so Service Manager, Docker Manager, 
 - Preserve earlier dirty work on codex/last-read-history without mixing it into commits. No live VPS actions.
 
 ## Work
-- [ ] RED→GREEN durable bounded cache isolation/validation/empty results/corruption/IO/stale sequencing.
-- [ ] Session/main IPC recording and mutation invalidation; narrow preload read API and real integration tests.
-- [ ] Cached-first renderer flow on all four pages, time label and fresh-action guards; regression tests across failures/navigation/server changes.
+- [x] RED→GREEN durable bounded cache isolation/validation/empty results/corruption/IO/stale sequencing.
+- [x] Session/main IPC recording and mutation invalidation; narrow preload read API and real integration tests.
+- [x] Cached-first renderer flow on all four pages, time label and fresh-action guards; regression tests across failures/navigation/server changes.
 - [ ] Full backend/lint/build/UI tests, independent scoped review and fixes; dark/light/900px inspection.
 - [ ] ARM installer build, strict signing/integrity/source parity/SHA256 verification and completion evidence.

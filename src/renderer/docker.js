@@ -1,8 +1,9 @@
 import { app, onShow, onLeave, show } from './app.js';
 import { $, el, announce } from './ui.js';
+import { readHistory, historyLabel } from './history.js';
 const api = window.api.docker;
 const reads = new Map();
-let server = null, containers = [], selected = '', page = 1, generation = 0, timer = null, action = null;
+let server = null, containers = [], selected = '', page = 1, generation = 0, timer = null, action = null, stale = false;
 let logGeneration = 0, logRequest = null, logTimer = null, logContainer = null, logText = '';
 const stateNames = { running: 'Berjalan', exited: 'Berhenti', created: 'Belum dijalankan', paused: 'Paused', restarting: 'Restarting', dead: 'Dead', removing: 'Removing' };
 function message(id, text) { $(id).textContent = text || ''; $(id).hidden = !text; }
@@ -13,8 +14,8 @@ function lost(result, owner) {
 function cancelReads() { for (const [id, owner] of reads) api.cancel(owner, id).catch(() => {}); reads.clear(); }
 function pause() { clearTimeout(timer); timer = null; $('docker-auto').checked = false; }
 function controls() {
-  const container = containers.find(row => row.id === selected), busy = action?.server === app.server;
-  $('docker-selected').textContent = busy ? `${action.name}: ${action.type} sedang diproses…` : container ? `Terpilih: ${container.name}` : 'Pilih container untuk menjalankan tindakan';
+  const container = containers.find(row => row.id === selected), inFlight = action?.server === app.server, busy = inFlight || stale;
+  $('docker-selected').textContent = inFlight ? `${action.name}: ${action.type} sedang diproses…` : container ? `Terpilih: ${container.name}` : 'Pilih container untuk menjalankan tindakan';
   for (const name of ['start','stop','restart','log','terminal']) $(`docker-${name}`).disabled = !container || busy || (name === 'start' && !['exited','created'].includes(container.state)) || (['stop','terminal'].includes(name) && container.state !== 'running') || (name === 'restart' && ['dead','removing'].includes(container.state));
 }
 function render() {
@@ -37,12 +38,19 @@ async function load() {
   const owner=app.server; if(!owner || $('view-docker').hidden)return;
   const ticket=++generation;clearTimeout(timer);cancelReads();message('docker-error','');$('docker-refresh').disabled=true;$('docker-loading').hidden=false;$('docker-table').hidden=true;$('docker-empty').hidden=true;
   for(const name of ['start','stop','restart','log','terminal'])$(`docker-${name}`).disabled=true;
+  const cached=await readHistory(owner,'docker');
+  if(ticket!==generation || app.server!==owner || $('view-docker').hidden)return;
+  if(cached){containers=cached.data.containers;stale=true;if(!containers.some(row=>row.id===selected))selected='';$('docker-notice').textContent=cached.data.notice;$('docker-loading').hidden=true;render();historyLabel($('docker-history'),cached.recordedAt,'refreshing');}
   const requestId=crypto.randomUUID();reads.set(requestId,owner.id);
   let result;try{result=await api.call(owner.id,'list',{requestId,sudo:$('docker-sudo').checked});}catch{result={ok:false,message:'Permintaan Docker gagal. Silakan coba kembali.'};}finally{reads.delete(requestId);}
   if(ticket!==generation || app.server!==owner || $('view-docker').hidden)return;
   $('docker-refresh').disabled=false;$('docker-loading').hidden=true;
-  if(!result.ok){pause();containers=[];selected='';render();if(!result.cancelled)message('docker-error',result.message);lost(result,owner);return;}
-  containers=result.data.containers;if(!containers.some(row=>row.id===selected))selected='';$('docker-notice').textContent=result.data.notice;render();
+  if(!result.ok){
+    pause();if(!result.cancelled)message('docker-error',result.message);
+    if(cached)historyLabel($('docker-history'),cached.recordedAt,result.cancelled?'cancelled':'failed');else{containers=[];selected='';stale=false;render();}
+    lost(result,owner);return;
+  }
+  stale=false;historyLabel($('docker-history'));containers=result.data.containers;if(!containers.some(row=>row.id===selected))selected='';$('docker-notice').textContent=result.data.notice;render();
   if($('docker-auto').checked)timer=setTimeout(load,5000);
 }
 async function mutate(type) {
@@ -78,5 +86,5 @@ $('docker-log').addEventListener('click',()=>{logContainer=containers.find(row=>
 $('docker-log-dialog').addEventListener('close',stopLog);
 $('docker-log-search').addEventListener('input',renderLog);$('docker-log-lines').addEventListener('change',loadLog);$('docker-log-refresh').addEventListener('click',loadLog);$('docker-log-auto').addEventListener('change',()=>{clearTimeout(logTimer);if($('docker-log-auto').checked)loadLog();});
 $('docker-terminal').addEventListener('click',()=>{const container=containers.find(row=>row.id===selected);if(container)show('terminal',{container:{id:container.id,name:container.name,shell:$('docker-shell').value,sudo:$('docker-sudo').checked}});});
-onShow('docker',()=>{if(server!==app.server){server=app.server;containers=[];selected='';page=1;$('docker-search').value='';$('docker-filter').value='all';$('docker-sudo').checked=false;$('docker-status').textContent='';pause();}load();});
+onShow('docker',()=>{if(server!==app.server){server=app.server;containers=[];selected='';stale=false;historyLabel($('docker-history'));page=1;$('docker-search').value='';$('docker-filter').value='all';$('docker-sudo').checked=false;$('docker-status').textContent='';pause();}load();});
 onLeave('docker',()=>{generation++;pause();cancelReads();stopLog();$('docker-refresh').disabled=false;if($('docker-log-dialog').open)$('docker-log-dialog').close();});

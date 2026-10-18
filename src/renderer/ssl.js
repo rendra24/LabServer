@@ -1,6 +1,7 @@
 import { app, onShow, onLeave, show, invalidateSyntax } from './app.js';
 import { $, el, announce, showError } from './ui.js';
 import { guardFileChanges } from './files.js';
+import { readHistory, historyLabel } from './history.js';
 const api = window.api.ssl;
 const reads = new Map();
 let server = null, certificates = [], generation = 0, page = 1, ready = false, pending = null, preparing = false;
@@ -16,7 +17,7 @@ function controls() {
   const busy=pending?.owner===app.server || preparing;
   $('ssl-new').disabled=!ready||busy;$('ssl-refresh').disabled=busy||!$('ssl-loading').hidden;$('ssl-submit').disabled=busy;
   for(const id of ['ssl-domains','ssl-email','ssl-redirect','ssl-terms'])$(id).disabled=busy;
-  for(const button of $('ssl-rows').querySelectorAll('button'))button.disabled=busy||button.dataset.supported!=='true';
+  for(const button of $('ssl-rows').querySelectorAll('button'))button.disabled=busy||!ready||button.dataset.supported!=='true';
 }
 function render() {
   const query=$('ssl-search').value.trim().toLocaleLowerCase();
@@ -37,12 +38,18 @@ function lost(result,owner) {if(result.code!=='NOT_CONNECTED'||app.server!==owne
 async function load() {
   const owner=app.server;if(!owner||$('view-ssl').hidden||pending?.owner===owner)return;
   const ticket=++generation;cancelReads();message('ssl-error','');$('ssl-loading').hidden=false;$('ssl-table').hidden=true;$('ssl-empty').hidden=true;controls();
+  const cached=await readHistory(owner,'ssl');
+  if(ticket!==generation || owner!==app.server || $('view-ssl').hidden)return;
+  if(cached){certificates=cached.data.certificates;ready=false;$('ssl-loading').hidden=true;render();historyLabel($('ssl-history'),cached.recordedAt,'refreshing');}
   const requestId=crypto.randomUUID();reads.set(requestId,owner.id);
   let result;try{result=await api.call(owner.id,'list',{requestId});}catch{result={ok:false,message:'Sertifikat gagal dimuat. Silakan coba kembali.'};}finally{reads.delete(requestId);}
   if(ticket!==generation||owner!==app.server||$('view-ssl').hidden)return;
   $('ssl-loading').hidden=true;ready=result.ok;
-  if(!result.ok){certificates=[];render();if(!result.cancelled)message('ssl-error',result.message);lost(result,owner);return;}
-  certificates=result.data.certificates;render();
+  if(!result.ok){
+    if(cached)historyLabel($('ssl-history'),cached.recordedAt,result.cancelled?'cancelled':'failed');else{certificates=[];render();}
+    if(!result.cancelled)message('ssl-error',result.message);lost(result,owner);return;
+  }
+  historyLabel($('ssl-history'));certificates=result.data.certificates;render();
 }
 async function mutate(op,input) {
   const owner=app.server;if(!owner||pending?.owner===owner||preparing)return;
@@ -72,5 +79,5 @@ $('ssl-form').addEventListener('submit',event=>{
 $('ssl-guide').addEventListener('click',()=>$('ssl-guide-dialog').showModal());
 $('ssl-install-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('ssl-install-command').textContent);$('ssl-copy-status').textContent='Command tersalin. Paste ke terminal VPS.';}catch{$('ssl-copy-status').textContent='Clipboard tidak tersedia. Pilih dan salin command secara manual.';}});
 window.api.onToolEvent(packet=>{if(packet.serverId!==app.server?.id||packet.type!=='nginx-changed')return;invalidateSyntax();$('sites-reload').disabled=true;$('ed-reload').disabled=true;});
-onShow('ssl',()=>{if(server!==app.server){server=app.server;certificates=[];ready=false;page=1;$('ssl-search').value='';$('ssl-status').textContent='';}if(pending?.owner===app.server){render();controls();}else load();});
+onShow('ssl',()=>{if(server!==app.server){server=app.server;certificates=[];ready=false;historyLabel($('ssl-history'));page=1;$('ssl-search').value='';$('ssl-status').textContent='';}if(pending?.owner===app.server){render();controls();}else load();});
 onLeave('ssl',()=>{generation++;cancelReads();$('ssl-loading').hidden=true;if($('ssl-issue-dialog').open)$('ssl-issue-dialog').close();});

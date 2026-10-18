@@ -1,9 +1,10 @@
 import { app, onShow, onLeave, show } from './app.js';
 import { $, el, announce, showError } from './ui.js';
+import { readHistory, historyLabel } from './history.js';
 const api = window.api.system;
 const serviceReads = new Map();
 let services = [], selected = '', serviceServer = null, serviceGeneration = 0, detailGeneration = 0, servicePage = 1;
-let detailUnit = '', actionPending = null;
+let detailUnit = '', actionPending = null, serviceStale = false;
 let logServer = null, logGeneration = 0, logRequest = null, logTimer = null, rawLog = '', appliedLog = null;
 const labels = { active: 'Berjalan', inactive: 'Tidak aktif', failed: 'Gagal', activating: 'Memulai', deactivating: 'Menghentikan', reloading: 'Reload', unknown: 'Tidak diketahui' };
 const apiCall = async (server, op, input, requests) => {
@@ -30,7 +31,7 @@ function serviceControls() {
   $('svc-selected').textContent = busy ? `${actionPending.action} · ${actionPending.unit} sedang diproses…` : record ? `Terpilih: ${record.name}` : 'Pilih layanan untuk menjalankan tindakan';
   for (const action of ['start', 'stop', 'restart']) {
     const button = $(`svc-${action}`);
-    button.disabled = !record || record.template || busy || (action === 'start' && record.active === 'active') || (action === 'stop' && record.active === 'inactive');
+    button.disabled = !record || record.template || busy || serviceStale || (action === 'start' && record.active === 'active') || (action === 'stop' && record.active === 'inactive');
   }
 }
 function renderServices() {
@@ -69,10 +70,23 @@ async function loadServices() {
   cancelReads(serviceReads);
   message('svc-error', ''); $('svc-loading').hidden = false; $('svc-table').hidden = true; $('svc-empty').hidden = true; $('svc-refresh').disabled = true;
   $('svc-start').disabled = true; $('svc-stop').disabled = true; $('svc-restart').disabled = true;
+  const cached = await readHistory(server, 'services');
+  if (ticket !== serviceGeneration || app.server !== server || $('view-services').hidden) return;
+  if (cached) {
+    services = cached.data.services; serviceStale = true;
+    if (!services.some(service => service.name === selected)) selected = '';
+    $('svc-loading').hidden = true; renderServices(); historyLabel($('svc-history'), cached.recordedAt, 'refreshing');
+  }
   const result = await apiCall(server, 'services', {}, serviceReads);
   if (ticket !== serviceGeneration || app.server !== server || $('view-services').hidden) return;
   $('svc-loading').hidden = true; $('svc-refresh').disabled = false;
-  if (!result.ok) { if (!result.cancelled) message('svc-error', result.message); services = []; selected = ''; renderServices(); lost(result, server); return; }
+  if (!result.ok) {
+    if (!result.cancelled) message('svc-error', result.message);
+    if (cached) historyLabel($('svc-history'), cached.recordedAt, result.cancelled ? 'cancelled' : 'failed');
+    else { services = []; selected = ''; serviceStale = false; renderServices(); }
+    lost(result, server); return;
+  }
+  serviceStale = false; historyLabel($('svc-history'));
   services = result.data.services;
   if (!services.some(service => service.name === selected)) selected = '';
   renderServices();
@@ -117,7 +131,7 @@ for (const action of ['start', 'stop', 'restart']) $(`svc-${action}`).addEventLi
 $('svc-detail-dialog').addEventListener('close', () => { detailGeneration++; });
 $('svc-detail-logs').addEventListener('click', () => { const unit = detailUnit; $('svc-detail-dialog').close(); show('logs', { unit }); });
 onShow('services', () => {
-  if (serviceServer !== app.server) { serviceServer = app.server; services = []; selected = ''; servicePage = 1; $('svc-search').value = ''; $('svc-filter').value = 'all'; serviceStatus(''); }
+  if (serviceServer !== app.server) { serviceServer = app.server; services = []; selected = ''; serviceStale = false; historyLabel($('svc-history')); servicePage = 1; $('svc-search').value = ''; $('svc-filter').value = 'all'; serviceStatus(''); }
   loadServices();
 });
 onLeave('services', () => { serviceGeneration++; detailGeneration++; cancelReads(serviceReads); $('svc-refresh').disabled = false; if ($('svc-detail-dialog').open) $('svc-detail-dialog').close(); });

@@ -23,7 +23,7 @@ function fixture() {
   const renderer = vm.runInNewContext(source + '\n;({load,mutate,state})', {
     app: { server: { id: 'server-a' } }, $, el: node, onShow() {}, onLeave() {},
     show() {}, invalidateSyntax() {}, announce() {}, showError() {},
-    guardFileChanges: async () => true, crypto: { randomUUID: () => `request-${calls.length}` },
+    guardFileChanges: async () => true, readHistory: async () => null, historyLabel() {}, crypto: { randomUUID: () => `request-${calls.length}` },
     window: { api: { ssl: api, onToolEvent() {} } },
   });
   return { ...renderer, $, calls, cancelled };
@@ -44,10 +44,11 @@ for (const [marker, label] of [['VALID: 90 days', 'Aktif'], ['INVALID: TEST_CERT
 for (const op of ['issue', 'renew']) for (const stale of ['success', 'error']) {
   test(`SSL ${op} result survives a delayed list ${stale}`, async () => {
     const f = fixture();
-    const initial = f.load();
+    const tick = () => new Promise(resolve => setImmediate(resolve));
+    const initial = f.load(); await tick(); // pembacaan history lokal selesai, lalu permintaan live dikirim
     f.calls[0].resolve({ ok: true, data: { certificates: [] } }); await initial;
-    const refresh = f.load();
-    const mutation = f.mutate(op, {}); await new Promise(resolve => setImmediate(resolve));
+    const refresh = f.load(); await tick();
+    const mutation = f.mutate(op, {}); await tick();
     assert.equal(f.calls[2].op, op);
     f.calls[2].resolve({ ok: true, data: { certificates: [{ name: 'new.example.com', domains: ['new.example.com'], expiresAt: Date.now() + 90 * 86400000, supported: true }], notice: 'Sertifikat terbaru' } });
     await mutation;
