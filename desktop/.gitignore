@@ -1,8 +1,0 @@
-dist/
-node_modules/
-scripts/.dev-hostkey
-scripts/.dev-key
-scripts/.dev-key-plain
-scripts/.dev-key-plain.pub
-scripts/.dev-key.pub
-src/renderer/vendor/

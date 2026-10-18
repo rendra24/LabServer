@@ -36,4 +36,4 @@ Gambar di folder ini diambil dari renderer Electron asli dengan profil fixture, 
 - [Editor gelap](labserver-editor-dark.png)
 - [Editor terang](labserver-editor-light.png)
 
-Regenerasi preview: `LABSERVER_SCREENSHOTS=desktop/docs/design npm --prefix desktop run test:ui` dari root repository. Untuk path output yang pasti, gunakan path absolut.
+Regenerasi preview: `LABSERVER_SCREENSHOTS=docs/design npm run test:ui`. Untuk path output yang pasti, gunakan path absolut.

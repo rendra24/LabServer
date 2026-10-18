@@ -1,6 +1,6 @@
 # PRD v3.1 — Monitoring (tambahan aplikasi desktop)
 
-Tanggal: 2026-10-17 · Status: draf, menunggu konfirmasi · Menambah `docs/desktop/PRD.md`; non-goals PRD v3 yang tidak disebut di sini tetap berlaku.
+Tanggal: 2026-10-17 · Status: draf, menunggu konfirmasi · Menambah `docs/PRD.md`; non-goals PRD v3 yang tidak disebut di sini tetap berlaku.
 
 ## Tujuan
 Halaman **Monitoring** per server (mirip dashboard Grafana sederhana) yang menampilkan statistik server dari **Prometheus yang terpasang di server tersebut**. Aplikasi tidak memasang apa pun di server dan tidak menyimpan data metrik sendiri.

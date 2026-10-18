@@ -1,122 +1,82 @@
-# TASKS.md — Dashboard Server
+# TASKS — Dashboard Server Desktop (PRD v3)
 
-Dokumen ini memuat rencana kerja bertahap untuk pengembangan MVP Dashboard Server. Setiap sprint dirancang untuk diselesaikan secara berurutan dengan task yang terukur.
+Urutan sprint D1 → D4. Aturan kerja sama dengan kickoff: tes dulu untuk logika non-trivial, verifikasi sungguhan, satu commit per task.
 
----
+## Sprint D1: Fondasi Electron & Koneksi SSH
+- [x] **D1.1** Scaffold `desktop/` (Electron, main/preload/renderer, `contextIsolation`, `sandbox`, CSP, blokir navigasi), skrip `npm start`/`npm test`/lint.
+- [x] **D1.2** Penyimpanan profil server (`servers.json` di userData) dengan validasi (host, port 1–65535, user, auth, path absolut).
+- [x] **D1.3** Modul SSH (`ssh2`): connect dengan password, key, key+passphrase; timeout; error ramah (auth gagal, host tak terjangkau, key tidak terbaca).
+  - *Dependensi:* D1.2
+- [x] **D1.4** Verifikasi host key TOFU (fingerprint SHA256, persetujuan pengguna, tolak bila berubah).
+  - *Dependensi:* D1.3
+- [x] **D1.5** UI daftar server: tambah/ubah/hapus profil, tombol Tes Koneksi, dialog fingerprint, opsi "Ingat password" via `safeStorage`.
+  - *Dependensi:* D1.3, D1.4
 
-## Sprint 1: Setup Proyek, Keamanan Gateway, dan Skema Basis Data
+**DoD:** Aplikasi berjalan (`npm start`), bisa connect ke server SSH uji (container) dengan password dan key, fingerprint baru diminta persetujuan dan fingerprint berubah ditolak.
 
-**Tujuan:** Menyiapkan struktur proyek backend, gateway web server Nginx dengan proteksi ganda (Basic Auth & IP Whitelist), konfigurasi hak akses `visudo`, dan skema database PostgreSQL.
+## Sprint D2: Operasi Nginx Remote
+- [x] **D2.1** Validasi nama berkas & quoting shell (unit test, termasuk payload injeksi).
+- [x] **D2.2** List `sites-available` + status `sites-enabled`; baca berkas.
+- [x] **D2.3** Tulis atomik, tambah (eksklusif), clone; fallback `sudo` bila izin SFTP ditolak.
+- [x] **D2.4** Aktif/nonaktif symlink (tidak menimpa entri asing).
+- [x] **D2.5** `nginx -t` dan reload aman (test ulang di main sebelum reload); `sudo -n` lalu fallback password sudo via stdin.
+- [x] **D2.6** Tes integrasi terhadap server SSH di container (user grup-writable, user sudo NOPASSWD, user sudo berpassword).
 
-- [x] **1.1** Inisialisasi struktur repositori Python (FastAPI/Flask), modul virtual environment, file dependency (`requirements.txt`), serta pembacaan konfigurasi environment variable (`.env`).
-- [x] **1.2** Buat migrasi skema database PostgreSQL untuk tabel `sites`, `test_profiles`, dan `audit_logs` sesuai kamus data.
-  - *Dependensi:* Task 1.1
-- [x] **1.3** Eksekusi migrasi dan pasang data awalan (*seeding*) pada tabel `sites`, `test_profiles`, dan `audit_logs`.
-  - *Dependensi:* Task 1.2
-- [x] **1.4** Siapkan template konfigurasi Nginx reverse proxy untuk membungkus dashboard (`:8000`) dengan proteksi `auth_basic` (HTTP Basic Auth) dan blok `allow`/`deny` (IP Whitelist).
-  - *Dependensi:* Task 1.1
-- [x] **1.5** Buat konfigurasi izin sudoers (`/etc/sudoers.d/dashboard-server`) untuk eksekusi tanpa password: `/usr/sbin/nginx -t` dan `/bin/systemctl reload nginx`.
-- [x] **1.6** Bangun koneksi database pool dan implementasikan endpoint *health check* (`GET /api/health`) untuk memvalidasi kesiapan backend dan koneksi database PostgreSQL.
-  - *Dependensi:* Task 1.2
+**DoD:** Semua operasi D2 lulus tes integrasi pada nginx sungguhan di container untuk ketiga model izin.
 
-**DoD:** Aplikasi backend berjalan di port `:8000`, terproteksi Nginx reverse proxy (IP Whitelist & Basic Auth), tabel PostgreSQL terinisialisasi dengan data seed, dan eksekusi sudo untuk perintah Nginx dapat dijalankan tanpa prompt password.
+## Sprint D3: UI Pengelolaan Vhost
+- [x] **D3.1** Halaman vhost per server: daftar, status, toggle, Tambah, Edit, Clone.
+- [x] **D3.2** Editor Ace (bundle lokal) + simpan + status Tersimpan/Belum Disimpan.
+- [x] **D3.3** Clone dengan "ganti domain" (pakai ulang `replaceDomain`).
+- [x] **D3.4** Panel diagnostik: Test Nginx Syntax, Reload terkunci sampai tes lolos; dialog password sudo.
 
----
+**DoD:** Alur edit/tambah/clone/aktifkan/test/reload diverifikasi end-to-end di aplikasi terhadap server container (alur utama + satu kasus error).
 
-## Sprint 2: Manajemen Berkas Konfigurasi & Symlink Nginx
+## Sprint D4: Paket & Distribusi
+- [x] **D4.1** `electron-builder`: macOS `.dmg` (arm64 + x64) dibangun dan dijalankan.
+- [ ] **D4.2** *(ditunda 2026-10-18: pemakaian internal hanya macOS; lihat DECISIONS #31)* Windows `.exe` (NSIS): build (cross-build atau GitHub Actions `windows-latest`) dan uji jalan.
+  - *Status 2026-10-17:* `Dashboard Server Setup 0.1.0.exe` berhasil di-cross-build dari macOS (PE32, asar berisi ssh2 + Ace). **Belum dijalankan di Windows**; workflow CI dengan smoke test sudah ditulis (`.github/workflows/desktop.yml`) tetapi belum dieksekusi.
+- [x] **D4.3** README desktop: instalasi, menambah server, kebutuhan izin di server (sudoers), keterbatasan (tanpa code signing).
 
-**Tujuan:** Membangun antarmuka editor dan backend I/O untuk membaca, menulis, membuat berkas di `/etc/nginx/sites-available/`, serta mengelola symlink di `/etc/nginx/sites-enabled/`.
+**DoD:** Installer macOS dan Windows tersedia dan aplikasi terbuka serta bisa connect.
 
-- [x] **2.1** Buat modul backend I/O untuk listing file, membaca isi file, membuat file baru, dan menghapus file di direktori `/etc/nginx/sites-available/`.
-  - *Dependensi:* Task 1.1
-- [x] **2.2** Buat modul backend untuk deteksi, pembuatan, dan penghapusan *symbolic link* di `/etc/nginx/sites-enabled/` dengan sinkronisasi status ke tabel `sites`.
-  - *Dependensi:* Task 2.1
-- [x] **2.3** Bangun REST API CRUD untuk manajemen situs (daftar situs, detail konfigurasi, buat/edit berkas, hapus berkas, dan toggle status symlink).
-  - *Dependensi:* Task 2.1, Task 2.2
-- [x] **2.4** Implementasikan pencatatan otomatis ke tabel `audit_logs` setiap kali terjadi pembuatan, modifikasi berkas, atau perubahan status symlink.
-  - *Dependensi:* Task 2.3
-- [x] **2.5** Bangun tampilan antarmuka web daftar situs menggunakan Tailwind CSS (menampilkan nama berkas, domain utama, dan status toggle aktif/nonaktif).
-  - *Dependensi:* Task 2.3
-- [x] **2.6** Integrasikan raw text code editor (Monaco Editor / Ace Editor) dengan syntax highlighting Nginx pada halaman editor konfigurasi.
-  - *Dependensi:* Task 2.5
-- [x] **2.7** Hubungkan aksi simpan editor ke endpoint update konfigurasi backend dan tampilkan feedback visual (status tersimpan/gagal).
-  - *Dependensi:* Task 2.4, Task 2.6
-
-**DoD:** Pengguna dapat melihat daftar situs, membuat berkas baru, menyunting konfigurasi via Monaco/Ace Editor, mengaktifkan/menonaktifkan symlink melalui toggle switch, dan seluruh perubahan berkas tercatat di `audit_logs`.
-
----
-
-## Sprint 3: Validasi Sintaks, Safe Reload, dan Curl Tester
-
-**Tujuan:** Mengintegrasikan eksekusi verifikasi sintaks Nginx, reload daemon aman berbasis status validasi, serta utilitas pengujian konektivitas via `curl` CLI.
-
-- [x] **3.1** Buat modul wrapper `subprocess` untuk menjalankan perintah `sudo nginx -t`, menangkap output `stdout`, `stderr`, dan return code secara aman.
-  - *Dependensi:* Task 1.5
-- [x] **3.2** Bangun endpoint API dan panel antarmuka konsol log interaktif untuk memicu "Test Nginx Config" serta menampilkan pesan diagnostik sintaks.
-  - *Dependensi:* Task 3.1
-- [x] **3.3** Implementasikan endpoint dan tombol antarmuka "Reload Nginx" (`sudo systemctl reload nginx`) yang secara otomatis terkunci (*disabled*) jika hasil `nginx -t` gagal atau belum dijalankan.
-  - *Dependensi:* Task 3.1, Task 3.2
-- [x] **3.4** Buat modul backend pemanggil CLI `curl` yang mendukung injeksi flag `--resolve <host>:<port>:<ip>` serta kustomisasi header `Host`.
-  - *Dependensi:* Task 1.1
-- [x] **3.5** Bangun endpoint API untuk menjalankan pengujian curl dan menyimpan konfigurasi target ke tabel `test_profiles`.
-  - *Dependensi:* Task 3.4
-- [x] **3.6** Bangun form antarmuka Curl Connectivity Tester (input domain target, target IP resolusi, port, protokol, dan custom headers).
-  - *Dependensi:* Task 3.5
-- [x] **3.7** Integrasikan penampil hasil curl tester (HTTP Status Code, TTFB/latensi, response headers, status SSL) dan simpan hasil eksekusi ke `audit_logs`.
-  - *Dependensi:* Task 3.6
-- [x] **3.8** *(ditambahkan 2026-10-16, atas permintaan user; lihat DECISIONS.md)* Bangun endpoint `GET /api/v1/audit-logs` (filter `action_type`, `site_id`, `is_success`; paginasi `limit`/`offset`; terbaru dulu; read-only).
-  - *Dependensi:* Task 2.4, Task 3.7
-- [x] **3.9** *(ditambahkan 2026-10-16)* Bangun halaman `/audit-logs` (toolbar filter, tabel riwayat, modal output lengkap, state loading/error/kosong) dan tambahkan menu Curl Tester & Audit Logs di navigasi.
-  - *Dependensi:* Task 3.8
-
-**DoD:** Pengujian `sudo nginx -t` menampilkan output riil di UI konsol log; tombol reload Nginx terkunci jika sintaks galat dan hanya aktif jika sintaks sukses; pengujian curl dengan parameter `--resolve` menampilkan status kode, latensi, dan response header dengan benar; halaman `/audit-logs` menampilkan riwayat aksi (termasuk NGINX_TEST, NGINX_RELOAD, CURL_TEST) beserta output lengkapnya.
+## Backlog desktop
+- Hapus berkas konfigurasi · Linux build · auto-update · code signing/notarisasi · Curl Tester & riwayat aksi lokal · beberapa sesi server paralel.
 
 ---
 
-## Sprint 4: Pengujian Terpadu & Validasi Lintas Lingkungan
+## Sprint M: Monitoring Prometheus (PRD-MONITORING.md)
 
-**Tujuan:** Memvalidasi kestabilan aplikasi bersama runtime lokal (PHP 8.3, PHP 7.4, Docker), skenario penanganan kegagalan konfigurasi, kesiapan deployment VPS Linux, serta dokumentasi sistem.
+### M1: Akses & katalog (main process)
+- [x] **M1.1** Klien Prometheus lewat SSH `forwardOut` (`query`, `query_range`, `targets`): timeout, batas ukuran, validasi bentuk respons, error ramah (Prometheus tidak ada, 4xx/5xx, timeout).
+- [x] **M1.2** Katalog panel bawaan (query tetap Host + Nginx), builder rentang/step (batas 5 mnt–7 hr, ≤ ~500 titik), konfigurasi `prometheus` per server (host/port, default `127.0.0.1:9090`) di store + validasi. Tes unit.
+  - *Dependensi:* M1.1
+- [x] **M1.3** Deteksi ketersediaan panel (job/exporter) dan IPC sempit `monitor:*` (whitelist panel, tanpa PromQL dari renderer).
+  - *Dependensi:* M1.2
 
-- [x] **4.1** Buat automated test/self-check script untuk memvalidasi sanitasi parameter CLI pada modul subprocess (mencegah command injection pada pemanggilan Nginx dan Curl).
-  - *Dependensi:* Task 3.1, Task 3.4
-- [x] **4.2** Uji integrasi konfigurasi virtual host terhadap runtime lokal: verifikasi reverse proxy ke port container Docker dan FastCGI pass ke PHP 8.3-FPM serta PHP 7.4-FPM menggunakan Curl Tester (`--resolve`).
-  - *Dependensi:* Task 3.7
-- [x] **4.3** Simulasikan skenario error sintaks Nginx (memasukkan berkas konfigurasi rusak): verifikasi bahwa Nginx daemon tidak mengalami downtime, tombol reload terkunci, dan error tercatat di audit log.
-  - *Dependensi:* Task 3.3
-- [ ] **4.4** Uji coba deployment menyeluruh pada server VPS Ubuntu/Debian target (validasi hak akses file, user permissions, visudo, dan reverse proxy Nginx).
-  - *Status 2026-10-16:* artefak siap (`deploy/verify-deployment.sh`, `deploy/dashboard-server.service`, `deploy/db-roles.sql`); diuji di container Ubuntu 24.04 (Nginx 1.24, sudo 1.9, PostgreSQL 16, Python 3.12): user/grup/izin, sudoers, htpasswd, gateway 401/200/403, backend sebagai `dashboard_app` dengan role DB append-only, alur dashboard penuh, `verify-deployment.sh` 22 cek lolos. **Belum terbukti:** unit systemd, `systemctl reload nginx` asli, TLS, firewall, VPS sungguhan.
-  - *Dependensi:* Task 4.2, Task 4.3
-- [ ] **4.5** Tulis panduan operasional teknis (prosedur setup sudoers, konfigurasi IP whitelist, pembuatan akun basic auth `htpasswd`, dan troubleshooting izin direktori).
-  - *Status 2026-10-16:* `docs/OPERATIONS.md` sudah dikoreksi dari hasil uji container (mis. `db-roles.sql` harus superuser); bagian systemd/TLS masih ⚠ menunggu VPS.
-  - *Dependensi:* Task 4.4
+**DoD:** Tes terhadap Prometheus + node_exporter + nginx exporter nyata di container mengembalikan seri untuk semua panel; panel tanpa exporter terdeteksi "tidak tersedia".
 
-**DoD:** Seluruh fitur teruji pada lingkungan lokal berdampingan dengan PHP/Docker dan VPS Linux; penanganan error sintaks terbukti aman tanpa downtime daemon; dokumentasi operasional dan izin sistem lengkap.
+### M2: UI Monitoring
+- [x] **M2.1** Bundle uPlot lokal; halaman Monitoring: kartu ringkas + grafik per panel, pilih rentang, auto-refresh, state loading/error/kosong/"tidak tersedia".
+  - *Dependensi:* M1.3
+- [ ] **M2.2** Pengaturan Prometheus per server di form server (host/port) dan tombol "Tes Prometheus".
+  - *Status 2026-10-17:* kode + validasi store (tes unit) selesai; **belum diverifikasi lewat GUI** (jendela app tidak bisa dikontrol saat itu). Perlu dicoba manual: isi/ubah host-port di form server, tombol Tes Prometheus di halaman Monitoring.
+  - *Dependensi:* M1.2
+- [ ] **M2.3** Aksesibilitas: tabel data alternatif/ringkasan teks per grafik, kontras, fokus.
+  - *Status 2026-10-17:* ringkasan teks (sr-only) + `role=img`/`aria-describedby` per grafik sudah ada; belum diuji dengan pembaca layar.
+  - *Dependensi:* M2.1
 
----
+**DoD:** Alur utama dan satu kasus error diverifikasi di aplikasi terhadap Prometheus di container.
 
-## Tambahan di luar rencana awal (permintaan user)
+### M3: Panduan & verifikasi
+- [x] **M3.1** Panduan server: instal Prometheus + node_exporter + nginx exporter (`stub_status`), contoh `prometheus.yml`, firewall; README desktop diperbarui.
+- [x] **M3.2** Tes integrasi end-to-end (container Ubuntu dengan paket apt `prometheus`, `prometheus-node-exporter`, `prometheus-nginx-exporter`).
 
-- [x] **5.1** *(2026-10-16)* Clone vhost: tombol "Clone" di `/sites` dan di editor membuka `/editor/new?from=<id>` dengan isi disalin (nama berkas dan domain dikosongkan, hasil clone nonaktif); tombol "Ganti domain lama dengan domain baru di isi" mengganti semua kemunculan domain sumber (server_name, root, nama log). Hanya frontend; memakai endpoint yang sudah ada. Tes: `node --test frontend/test/`.
-
----
-
-## Backlog (pasca-MVP)
-
-Hal-hal berikut sengaja ditunda dari cakupan Tahap 1 sesuai batasan PRD:
-
-- **Otomasi SSL/TLS:** Integrasi Certbot / Let's Encrypt untuk penerbitan dan pembaruan sertifikat SSL otomatis.
-- **Visual VHost Builder:** Form GUI interaktif (wizard) untuk membuat blok Nginx tanpa mengedit raw text configuration.
-- **Git Versioning:** Integrasi Git commit & push otomatis untuk setiap riwayat perubahan berkas pada `/etc/nginx/sites-available/`.
-- **Role-Based Access Control (RBAC):** Manajemen hak akses multi-user di dalam aplikasi backend (selain proteksi HTTP Basic Auth level Nginx).
-- **Log Streaming Real-time:** Fitur live streaming akses log (`access.log`) dan error log (`error.log`) Nginx via WebSocket.
-- **Dukungan Web Server Lain:** Dukungan manajemen web server Apache, Caddy, atau Traefik.
+**DoD:** Panduan diikuti di container dan menghasilkan dashboard berisi data.
 
 ---
 
-## Asumsi
-
-1. Dashboard dijalankan di bawah akun Linux khusus (misal: `dashboard-runner`) yang tergabung dalam grup sistem dengan hak baca/tulis terhadap `/etc/nginx/sites-available` dan `/etc/nginx/sites-enabled`.
-2. Utilitas `curl` yang terpasang pada host server minimal versi 7.21.3 untuk mendukung opsi `--resolve`.
-3. Basis data PostgreSQL telah terpasang dan dapat diakses dari host backend melalui socket lokal atau TCP port 5432.
-4. Nginx gateway dashboard menggunakan berkas htpasswd standar (`/etc/nginx/.htpasswd`) untuk mekanisme HTTP Basic Auth.
-5. Konfigurasi `nginx.conf` utama server sudah memuat direktif `include /etc/nginx/sites-enabled/*;`.
+## Distribusi internal (2026-10-18)
+- [x] **R1** Pengecek versi (`update-check.js`, tes) + IPC `update:check` + tombol "Periksa pembaruan".
+- [x] **R2** Workflow rilis macOS-only (tag `desktop-v*` -> GitHub Release) dan `desktop/RELEASING.md`.
+  - *Belum diverifikasi:* workflow belum pernah berjalan di GitHub (repo belum ada); pengecek belum diuji ke API GitHub sungguhan (hanya dengan fetch tiruan); tombol di sidebar belum dilihat di GUI.

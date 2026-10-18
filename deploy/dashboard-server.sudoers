@@ -1,4 +1,0 @@
-# Pasang sebagai /etc/sudoers.d/dashboard-server (mode 0440, owner root).
-# Hanya dua perintah persis, tanpa argumen lain. curl TIDAK memakai sudo.
-dashboard_app ALL=(root) NOPASSWD: /usr/sbin/nginx -t
-dashboard_app ALL=(root) NOPASSWD: /bin/systemctl reload nginx

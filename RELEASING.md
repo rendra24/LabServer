@@ -4,12 +4,11 @@ Pemakaian internal: installer **belum ditandatangani/dinotarisasi**, jadi tidak 
 
 ## Sekali saja
 1. Buat repo GitHub dan push.
-2. Isi `repository.url` di `desktop/package.json` dengan URL repo (ganti `OWNER/REPO`). Tanpa ini, tombol pembaruan menjawab "alamat repositori belum diatur".
+2. Isi `repository.url` di `package.json` dengan URL repo (ganti `OWNER/REPO`). Tanpa ini, tombol pembaruan menjawab "alamat repositori belum diatur".
 3. Tombol "Periksa pembaruan" memakai API GitHub tanpa token, jadi hanya bekerja untuk **repo publik**. Untuk repo privat, pengecekan menjawab "repositori tidak ditemukan atau privat" dan pengguna mengunduh manual dari Releases (anggota repo yang login).
 
 ## Tiap rilis
 ```bash
-cd desktop
 npm version patch --no-git-tag-version     # atau minor / major; mengubah package.json + lock
 git commit -am "desktop: versi 0.1.1"      # sesuaikan angka
 git tag desktop-v0.1.1                     # harus persis desktop-v + versi package.json
