@@ -1,0 +1,33 @@
+# SSH Port Forwarding — implementation and verification
+
+User requested recommendation 6, SSH Port Forwarding, and explicitly chose “Lanjut sesuai rekomendasi” after being offered local forwarding without further questions. Brainstorming opt-out applies; proceed with the following implementer choices using existing Electron/ssh2/Node TCP, no new dependencies.
+
+- Connected-server Port Forwarding tab, consistent light/dark and 900px layout.
+- Saved local-forward profiles: UUID, label, local port 1024–65535, target host/IP and target TCP port 1–65535. Bind only IPv4 127.0.0.1; target is resolved/reached from VPS. Default target 127.0.0.1; example local 3307 → remote 3306. TCP only; no remote forwarding/SOCKS/UDP/auto-start or new SSH connection.
+- Manual start/stop, edit/delete only while inactive, copy local endpoint, status listening/starting/error/stopped and active client count. Listening does not claim destination health; target rejection affects that client and is shown with a safe error. Navigating leaves tunnels running; disconnect/app close warns and closes all listeners/channels, including pending channels arriving late.
+- Main process owns listener/SSH channels, pinned to existing connection. Backpressure through stream piping, half-close support, per-client errors/15s channel-open deadline. Max 8 active tunnels per SSH connection, 32 concurrent clients per tunnel, 128 total per SSH connection including pending clients; excess clients rejected without unbounded queues.
+- Store profiles as optional `tunnels` on existing server profiles. Server edits preserve omitted profiles, encrypted .lsb backup includes config, old backup imports preserve omitted tunnel settings on update, explicit [] clears. Invalid data fails before writing. Do not persist runtime state, sockets, traffic, or credentials. Backup preview reports profile count; restore never starts a tunnel. Existing namespace/keys/backup envelope unchanged; document older apps do not preserve this optional field.
+- Narrow trusted IPC list/save/remove/start/stop; saved ID lookup, busy mutation lock, session identity checks after async native dialogs/bind. Native confirm stop/delete; active profiles cannot edit/delete. No shell commands or VPS configuration edits.
+
+## Tasks
+- [x] RED→GREEN real local TCP/SSH forwarding/lifecycle/resource-limit and validation tests.
+- [x] RED→GREEN store/server edit/backup portability/old backups/invalid config tests.
+- [x] Trusted IPC/session integration and ownership/lifecycle tests.
+- [x] RED→GREEN real Electron UI, tunnel bytes/local endpoint/copy/error/actions/navigation and themes/900px; preserve existing features.
+- [x] Full npm test, lint/build, UI screenshot inspection, independent scoped code review and material fixes.
+- [x] ARM DMG, strict codesign/hdiutil/source parity/SHA256; final evidence and limits.
+
+Existing accepted work is extensively uncommitted; retain it on codex/ssh-port-forwarding, no reset/stash or commits mixing earlier work. No live VPS changes/testing. All TCP/SSH tests loopback-only. Native fullscreen checks may use previously documented explicit DOM mode; disclose skips. ARM build remains ad-hoc signed/unnotarized; no Intel/Windows rebuild.
+
+## Execution evidence
+
+- New branch created preserving the dirty accepted foundation. No commits combining earlier work, no live VPS/network services touched beyond local fixtures.
+- Runtime/store/broker missing functionality reproduced RED→GREEN. Real TCP/SSH tests cover binary bytes, bind conflicts, destination rejection, stop/dispose/late channels, half-close, 8MiB slow-reader integrity,15s open deadline,8 tunnel/32 per tunnel/128 total limits. Backup portability/server edit/old update omission validated. Native main IPC test covers unauthorized frames, cancelled window close/disconnect, surviving listener and release after approved disconnect.
+- UI RED at absent contextual tab. Implemented nine connected tabs, CRUD inactive profiles, manual start/stop/copy/search/active connection count/explanatory guide and theme responsiveness. Initial900px assertion measured tab right876.234375 while nav right876; integer ceil/floor scroll delta fixes subpixel clipping. Final pre-review-fix Electron run180 checks pass,2 documented native fullscreen skips,no renderer errors.
+- One independent scoped read-only review completed with two Important findings,no Critical or Minor findings. Both reproduced and fixed once: (1) unanswered ssh2 channel opens retain per-session/per-profile quota after local timeout/StopStart until callback/SSH disposal; test initially waited incorrectly for local FIN to close allowHalfOpen peer, corrected to controlled15s timeout, verified failure with premature quota release then success with reservations; (2) owner operation token prevents old renderer mutation completion clearing a replacement's busy state, deferred-response RED→GREEN. No findings deferred or re-review requested. Reviewer independently reproduced64 unanswered requests before fix using real SSH and verified16MiB slow-reader transfer without truncation.
+- Declined to judge: live VPS forwarding permissions/destination availability, native fullscreen and platform distribution outside feature scope, and unrelated accepted dirty foundation. Packaging/integrity checks follow separately; native limitations disclosed.
+- Full-suite/lint/build/UI rerun after review fixes in progress; ARM packaging follows UI completion.
+
+Final post-review verification: npm test199 total,194 pass,5 external integrations skipped,0 fail. Lint/build:renderer/diff check pass. Final real Electron smoke180 checks pass,2 explicit native fullscreen checks skipped,no renderer errors. Dark/light/900px screenshots inspected; same prior host limitation and DOM fullscreen mode retained. Runtime/renderer review findings resolved; no outstanding implementation work. ARM DMG build in progress, source/signature/integrity/SHA256 checks pending.
+
+Release complete: electron-builder --mac dmg --arm64 --publish never exited0. dist/LabServer-0.1.0-arm64.dmg built. Strict deep codesign verifies valid on disk and designated requirement; signature ad-hoc/TeamIdentifier absent/no notarization. hdiutil verify DMG checksum VALID. All259 packaged source/assets byte-identical to tested workspace; runtime package metadata matches after normal builder stripping of scripts/devDependencies/build. SHA256 sidecar refreshed and verifies OK:72259c173987e808f770a40cbd2b2df87a99fa9e5f0c19244bf3b395eb2a49c7. Intel/Windows installers not rebuilt. No required feature/review/release work remains. Branch codex/ssh-port-forwarding remains uncommitted to preserve earlier accepted work.
