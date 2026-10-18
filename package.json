@@ -13,7 +13,7 @@
     "vendor": "node scripts/vendor.js",
     "prestart": "npm run vendor",
     "start": "electron .",
-    "test": "node --test --test-concurrency=1 test/ test/integration/",
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\" \"test/integration/*.test.js\"",
     "test:ui": "electron scripts/smoke-ui.js",
     "lint": "eslint .",
     "css": "tailwindcss -i src/renderer/input.css -o src/renderer/app.css --minify",
