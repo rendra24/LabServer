@@ -24,7 +24,7 @@ xattr -dr com.apple.quarantine "/Applications/LabServer.app"
 | | |
 |---|---|
 | **Monitoring** | CPU, memori, disk, jaringan, dan metrik Nginx dari Prometheus lewat SSH tunnel |
-| **Terminal** | Hingga 8 tab shell per server, warna ANSI, fullscreen |
+| **Terminal** | Banyak tab sekaligus, dari server yang berbeda, warna ANSI, fullscreen |
 | **File manager** | Dua panel lokal ↔ server (SFTP), upload/download, editor bawaan |
 | **Nginx** | Edit, tambah, clone, aktif/nonaktif vhost; `nginx -t` sebelum reload |
 | **Service & Log** | Start/stop/restart layanan systemd, lihat jurnal dan log Nginx |

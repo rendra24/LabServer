@@ -117,7 +117,9 @@ app.whenReady().then(async () => {
     },
     "servers:remove": () => ({ ok: false, cancelled: true }),
     "servers:test": () => ({ ok: true }),
-    "servers:connect": (event, id) => sshSessions.connect(id, {}, (packet) => event.sender.send("terminal:event", { serverId: id, ...packet })),
+    "history:get": () => null,
+    "servers:connected": () => sshSessions.connectedIds(),
+    "servers:connect": (event, id) => sshSessions.isConnected(id) ? { ok: true } : sshSessions.connect(id, {}, (packet) => event.sender.send("terminal:event", { serverId: id, ...packet })),
     "servers:disconnect": (_event, id) => { sshSessions.close(id); return { ok: true }; },
     "terminal:call": async (_event, id, op, ...args) => {
       const result = await sshSessions.terminal(id, op, ...args);
@@ -176,7 +178,7 @@ app.whenReady().then(async () => {
   await check('SSL Manager requires SSH and is a contextual tab', "document.querySelector('#server-workspace #nav-ssl')?.disabled === true && !document.querySelector('#sidebar #nav-ssl')");
   await check('Port Forwarding requires SSH and belongs to the server workspace', "document.querySelector('#server-workspace #nav-tunnels')?.disabled === true && !document.querySelector('#sidebar #nav-tunnels')");
   await check('Docker Manager requires SSH and is a contextual tab', "document.querySelector('#server-workspace #nav-docker')?.disabled === true && !document.querySelector('#sidebar #nav-docker')");
-  await check('server tools are contextual and hidden before connecting', "document.getElementById('server-workspace')?.hidden === true && !document.querySelector('#sidebar #nav-monitor, #sidebar #nav-terminal, #sidebar #nav-files, #sidebar #nav-sites')");
+  await check('server tools are contextual and hidden before connecting', "document.getElementById('server-workspace')?.hidden === true && !document.querySelector('#sidebar #nav-monitor, #sidebar #nav-files, #sidebar #nav-sites')");
   await evaluate("document.getElementById('sidebar-toggle').click()");
   await check("hide sidebar expands workspace", "document.getElementById('sidebar').hidden && getComputedStyle(document.querySelector('.workspace-main')).marginLeft === '0px' && document.getElementById('sidebar-toggle').getAttribute('aria-expanded') === 'false'");
   await win.loadFile(path.join(RENDERER_DIR, "index.html"));
@@ -339,7 +341,7 @@ app.whenReady().then(async () => {
   await evaluate("document.getElementById('server-dialog').close(); document.getElementById('theme-dark').click(); document.querySelector('.btn-connect').click()");
   await until("!document.getElementById('view-monitor').hidden && !document.getElementById('error').hidden");
   await check("connect opens monitoring even when Prometheus unavailable", "!document.getElementById('view-monitor').hidden && document.getElementById('view-sites').hidden && !document.getElementById('nav-sites').disabled && document.getElementById('nav-monitor').getAttribute('aria-current') === 'page' && !document.getElementById('nav-sites').hasAttribute('aria-current')");
-  await check('connected server owns its navigation and disconnect action', "!document.getElementById('server-workspace').hidden && document.querySelectorAll('#server-workspace nav button').length === 9 && document.getElementById('session-name').textContent === 'Production · Singapore' && document.getElementById('session-host').textContent === 'deploy@203.0.113.10:22' && !document.getElementById('server-disconnect').disabled && document.getElementById('nav-servers').classList.contains('is-active')");
+  await check('connected server owns its navigation and disconnect action', "!document.getElementById('server-workspace').hidden && document.querySelectorAll('#server-workspace nav button').length === 8 && document.getElementById('session-name').textContent === 'Production · Singapore' && document.getElementById('session-host').textContent === 'deploy@203.0.113.10:22' && !document.getElementById('server-disconnect').disabled && document.getElementById('nav-servers').classList.contains('is-active')");
   assert.equal(sitesRequests, 0, "connecting does not request Nginx configurations");
   await evaluate("document.getElementById('mon-install').click()");
   await check('Prometheus install guide is available when monitoring is unavailable', "document.getElementById('mon-install-dialog').open && document.getElementById('mon-install-command').textContent.includes('sudo apt install -y prometheus prometheus-node-exporter')");
@@ -395,7 +397,7 @@ app.whenReady().then(async () => {
   await check('inactive tunnel profiles can be edited without losing endpoints',`document.getElementById('tunnel-list').textContent.includes('127.0.0.1:${localTunnelPort}')`);
   await evaluate("document.getElementById('tunnel-search').value='nothing-matches';document.getElementById('tunnel-search').dispatchEvent(new Event('input'))");await check('tunnel search filters saved profiles',"document.getElementById('tunnel-list').hidden && !document.getElementById('tunnel-empty').hidden");
   await evaluate("document.getElementById('tunnel-search').value='';document.getElementById('tunnel-search').dispatchEvent(new Event('input'));document.querySelector('[aria-label=\"Hapus Database production\"]').click()");await until("document.querySelectorAll('.tunnel-card').length===0");
-  await check('confirmed deletion removes only the inactive local tunnel profile',"document.getElementById('tunnel-total').textContent==='0' && !document.getElementById('nav-terminal').disabled");
+  await check('confirmed deletion removes only the inactive local tunnel profile',"document.getElementById('tunnel-total').textContent==='0' && !document.getElementById('nav-monitor').disabled");
   await evaluate("document.getElementById('theme-dark').click();document.getElementById('nav-monitor').click()");
   await evaluate("document.getElementById('nav-docker').click()");
   await until("document.querySelectorAll('#docker-rows tr').length === 2");
@@ -613,7 +615,7 @@ app.whenReady().then(async () => {
   const stoppedReads = system.commands.filter(command=>command.includes('journalctl')).length;
   await new Promise(resolve=>setTimeout(resolve,3200));
   assert.equal(system.commands.filter(command=>command.includes('journalctl')).length,stoppedReads);
-  await check('leaving Log Viewer stops polling and preserves SSH', "!document.getElementById('logs-auto').checked && !document.getElementById('nav-terminal').disabled");
+  await check('leaving Log Viewer stops polling and preserves SSH', "!document.getElementById('logs-auto').checked && !document.getElementById('nav-monitor').disabled");
   system.hold(true);
   await evaluate("document.getElementById('nav-logs').click()");
   for(let i=0;i<100&&system.pending.size===0;i++)await new Promise(resolve=>setTimeout(resolve,10));
@@ -625,15 +627,15 @@ app.whenReady().then(async () => {
   system.unsupported(true);
   await evaluate("document.getElementById('nav-services').click()");
   await until("document.getElementById('svc-error').textContent.includes('systemd')");
-  await check('unsupported servers retain access to other tools', "!document.getElementById('nav-terminal').disabled && document.getElementById('svc-start').disabled");
+  await check('unsupported servers retain access to other tools', "!document.getElementById('nav-monitor').disabled && document.getElementById('svc-start').disabled");
   system.unsupported(false);
   await evaluate("document.getElementById('nav-monitor').click()");
   await until("!document.getElementById('view-monitor').hidden");
   sshServer.disconnectClients();
-  await until("!document.getElementById('view-servers').hidden && document.getElementById('nav-terminal').disabled");
+  await until("!document.getElementById('view-servers').hidden && document.getElementById('nav-monitor').disabled");
   await check('SSH loss resets navigation before the first terminal tab is opened', "document.getElementById('error').textContent.includes('Koneksi SSH terputus')");
   await evaluate("document.querySelector('.btn-connect').click()");
-  await until("!document.getElementById('view-monitor').hidden && !document.getElementById('nav-terminal').disabled");
+  await until("!document.getElementById('view-monitor').hidden && !document.getElementById('nav-monitor').disabled");
   await evaluate("document.getElementById('nav-files').click()");
   await until("!document.getElementById('view-files').hidden && document.getElementById('fm-remote-rows').textContent.includes('package.json')");
   await check('file manager uses active SSH/SFTP with two panels', "document.getElementById('nav-files').getAttribute('aria-current') === 'page' && document.querySelectorAll('.fm-panel').length === 2");
@@ -748,7 +750,11 @@ app.whenReady().then(async () => {
   tools.missingShell(false);
   await evaluate("document.querySelectorAll('#term-tabs .terminal-tab-close')[1].click()");
   await check('terminal address is in shell card without duplicate page heading', "!document.getElementById('term-title') && !document.getElementById('term-host') && document.getElementById('term-shell-title').textContent.includes('SSH shell - deploy@203.0.113.10:22')");
-  await evaluate("document.getElementById('term-new').click(); document.getElementById('term-new').click()");
+  for (let i = 0; i < 2; i++) {
+    await evaluate("document.getElementById('term-new').click()");
+    await until("document.getElementById('term-server-dialog').open");
+    await evaluate("document.querySelector('#term-server-list button').click()"); // server terhubung diurutkan lebih dulu
+  }
   await until("document.querySelectorAll('#term-tabs [role=tab]').length === 3 && document.getElementById('term-status').textContent === 'Shell aktif'");
   await evaluate("(() => { const input = document.querySelector('#term-container .terminal-session:not([hidden]) textarea'); for (const char of 'third-session') input.dispatchEvent(new KeyboardEvent('keypress', {bubbles:true,key:char,charCode:char.charCodeAt(0),which:char.charCodeAt(0)})); input.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,key:'Enter',keyCode:13})); })()");
   await until("document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('received:third-session')");
@@ -757,16 +763,25 @@ app.whenReady().then(async () => {
   await evaluate("document.querySelectorAll('#term-tabs [role=tab]')[1].click()");
   await until("document.getElementById('term-status').textContent === 'Shell aktif' && document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('deploy@fixture')");
   await check('parallel opening routes early prompts to the correct tab', "!document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('third-session')");
-  await evaluate("window.confirm = () => false; document.querySelector('[aria-label=\"Tutup tab Terminal 2\"]').click()");
+  await evaluate("window.confirm = () => false; document.querySelectorAll('#term-tabs .terminal-tab-close')[1].click()");
   await check('cancelled tab close preserves all sessions', "document.querySelectorAll('#term-tabs [role=tab]').length === 3 && document.getElementById('term-status').textContent === 'Shell aktif'");
-  await evaluate("window.confirm = () => true; document.querySelector('[aria-label=\"Tutup tab Terminal 2\"]').click()");
+  await evaluate("window.confirm = () => true; document.querySelectorAll('#term-tabs .terminal-tab-close')[1].click()");
   await until("document.querySelectorAll('#term-tabs [role=tab]').length === 2");
   await evaluate("document.querySelectorAll('#term-tabs [role=tab]')[1].click()");
   await check('closing a sibling tab keeps the remaining shell and its output', "document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('received:third-session') && document.getElementById('term-status').textContent === 'Shell aktif'");
+  await evaluate("document.getElementById('term-new').click()");
+  await until("document.getElementById('term-server-dialog').open");
+  await check('server picker lists every saved server and marks the connected one first', "document.querySelectorAll('#term-server-list button').length >= 2 && document.querySelector('#term-server-list button').textContent.includes('Terhubung') && document.querySelectorAll('#term-server-list button')[1].textContent.includes('Belum terhubung')");
+  await evaluate("document.querySelectorAll('#term-server-list button')[1].click()");
+  await until("document.querySelectorAll('#term-tabs [role=tab]').length === 3 && document.getElementById('term-status').textContent === 'Shell aktif'");
+  await check('a tab on a second server connects on demand and the shell title follows that server', "!document.getElementById('term-shell-title').textContent.includes('203.0.113.10') && document.getElementById('term-shell-title').textContent.includes('SSH shell - ') && document.querySelectorAll('#term-tabs [role=tab]')[2].getAttribute('aria-selected') === 'true'");
+  await evaluate("window.confirm = () => true; document.querySelectorAll('#term-tabs .terminal-tab-close')[2].click()");
+  await until("document.querySelectorAll('#term-tabs [role=tab]').length === 2");
+  await evaluate("document.querySelectorAll('#term-tabs [role=tab]')[1].click()");
   await screenshot('labserver-terminal-tabs-dark');
   win.setSize(900,800); await until('innerWidth === 900');
   await check('terminal tabs and shell toolbar fit the minimum desktop width', 'document.documentElement.scrollWidth <= innerWidth');
-  await check('server tools remain visible independently of shell tabs', "document.querySelector('#server-workspace nav').getBoundingClientRect().right <= innerWidth && document.getElementById('nav-terminal').getAttribute('aria-current') === 'page' && document.getElementById('term-panel').getBoundingClientRect().bottom <= innerHeight");
+  await check('Terminal is a global sidebar page; the per-server tool bar is hidden', "document.getElementById('server-workspace').hidden && document.getElementById('nav-terminal').getAttribute('aria-current') === 'page' && document.getElementById('term-panel').getBoundingClientRect().bottom <= innerHeight");
   await screenshot('labserver-terminal-tabs-900');
   win.setSize(1320,900); await until('innerWidth === 1320');
   await evaluate("document.querySelectorAll('#term-tabs [role=tab]')[0].click()");
@@ -784,7 +799,7 @@ app.whenReady().then(async () => {
   await until("document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('received:third-session')");
   await check('tabs remain usable inside terminal fullscreen', "document.fullscreenElement?.id === 'term-panel' && document.querySelectorAll('#term-tabs [role=tab]').length === 2");
   await evaluate("document.querySelectorAll('#term-tabs [role=tab]')[0].click()");
-  assert.equal(sshServer.stats.shells, 3, "fullscreen reuses the active shell");
+  assert.equal(sshServer.stats.shells, 4, "fullscreen reuses the active shell"); // 3 tab sebelumnya + 1 tab di server kedua
   await screenshot("labserver-terminal-fullscreen");
   await toggleTerminalFullscreen(false);
   await until("!document.fullscreenElement && document.getElementById('term-fullscreen').getAttribute('aria-pressed') === 'false'");
@@ -819,7 +834,7 @@ app.whenReady().then(async () => {
   await check("terminal persists across dashboard navigation", "document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('received:echo labserver-test')");
   await evaluate("document.getElementById('nav-dns').click()");
   await until("!document.getElementById('view-dns').hidden && document.querySelectorAll('#dns-rows tr').length === 3");
-  await check('global DNS navigation hides server tabs while keeping SSH connected', "document.getElementById('server-workspace').hidden && !document.getElementById('nav-terminal').disabled");
+  await check('global DNS navigation hides server tabs while keeping SSH connected', "document.getElementById('server-workspace').hidden && !document.getElementById('nav-monitor').disabled");
   await evaluate("document.getElementById('nav-servers').click()");
   await until("!document.getElementById('view-terminal').hidden");
   await check('returning from DNS restores the active server and terminal output', "document.querySelector('#term-container .terminal-session:not([hidden]) .xterm-rows').textContent.includes('received:echo labserver-test') && !document.getElementById('server-workspace').hidden");
@@ -883,7 +898,7 @@ app.whenReady().then(async () => {
   await check('disconnect respects unsaved changes', "!document.getElementById('view-editor').hidden && !document.getElementById('server-workspace').hidden");
   await evaluate("window.confirm = () => true; document.getElementById('server-disconnect').click()");
   await until("!document.getElementById('view-servers').hidden");
-  await check("disconnect resets sidebar", "document.getElementById('nav-sites').disabled && document.getElementById('nav-monitor').disabled && document.getElementById('nav-terminal').disabled && document.getElementById('server-session').hidden");
+  await check("disconnect resets sidebar", "document.getElementById('nav-sites').disabled && document.getElementById('nav-monitor').disabled && document.getElementById('nav-monitor').disabled && document.getElementById('server-session').hidden");
   await check('disconnect hides server workspace and returns to global navigation', "document.getElementById('server-workspace').hidden && document.getElementById('nav-servers').getAttribute('aria-current') === 'page'");
   await evaluate("document.querySelector('.btn-connect').click()");
   await until("!document.getElementById('view-monitor').hidden");
@@ -903,13 +918,13 @@ app.whenReady().then(async () => {
   await until("document.getElementById('term-status').textContent === 'Shell aktif'");
   sshServer.disconnectClients();
   await until("!document.getElementById('view-servers').hidden");
-  await check("SSH loss in terminal returns to reconnect screen", "document.getElementById('nav-terminal').disabled && document.getElementById('error').textContent.includes('Koneksi SSH terputus')");
+  await check("SSH loss in terminal returns to reconnect screen", "document.getElementById('nav-monitor').disabled && document.getElementById('error').textContent.includes('Koneksi SSH terputus')");
   await evaluate("document.querySelector('.btn-connect').click()");
   await until("!document.getElementById('view-monitor').hidden");
   await evaluate("document.getElementById('nav-dns').click()");
   await until("!document.getElementById('view-dns').hidden && !document.getElementById('dns-add-record').disabled");
   sshServer.disconnectClients();
-  await until("document.getElementById('nav-terminal').disabled");
+  await until("document.getElementById('nav-monitor').disabled");
   await check('SSH loss cannot interrupt the independent DNS workspace', "!document.getElementById('view-dns').hidden && document.getElementById('nav-dns').getAttribute('aria-current') === 'page' && !document.getElementById('dns-add-record').disabled");
   await evaluate("document.getElementById('nav-servers').click()");
   await evaluate("document.getElementById('help').click()");

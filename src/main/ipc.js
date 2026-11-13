@@ -142,7 +142,10 @@ function registerIpc() {
     if(response!==1)return{ok:false,cancelled:true};
     const result=svc.forgetHostKey(str(id));if(result.ok)history.remove(str(id));return result;
   });
+  handle("servers:connected", () => sessions.connectedIds());
   handle("servers:connect", (event, id, creds) => {
+    // Koneksi yang sudah ada (mis. dibuka dari halaman Terminal) dipakai ulang agar sesi shell tidak terputus.
+    if (sessions.isConnected(str(id))) return { ok: true };
     const sender = event.sender;
     if (!terminalOwners.has(sender)) {
       terminalOwners.add(sender);

@@ -2,7 +2,7 @@ import { app, onShow, show } from "./app.js";
 import "./editor.js";
 import "./monitor.js";
 import "./update.js";
-import "./terminal.js";
+import { terminalCount } from "./terminal.js";
 import "./backup.js";
 import { guardDnsChanges } from './dns.js';
 import './system.js';
@@ -40,6 +40,8 @@ async function goToServers() {
   if (!$("view-editor").hidden) return;
   if (app.server) {
     if (!await guardFileChanges() || !app.server) return;
+    const tabs = terminalCount(app.server.id);
+    if (tabs && !window.confirm(`Ada ${tabs} tab terminal untuk ${app.server.name}. Memutus koneksi akan menutup semuanya. Lanjutkan?`)) return;
     const result = await window.api.servers.disconnect(app.server.id);
     if (!result.ok) return;
     app.server = null;
@@ -48,7 +50,7 @@ async function goToServers() {
 }
 
 function openServers() {
-  if (!$("view-dns").hidden && app.server) show(app.serverView || 'monitor');
+  if ((!$("view-dns").hidden || !$("view-terminal").hidden) && app.server) show(app.serverView || 'monitor');
   else goToServers();
 }
 $("nav-servers").addEventListener("click", openServers);
@@ -62,7 +64,7 @@ $("brand-home").addEventListener("click", (e) => { e.preventDefault(); openServe
 $("nav-terminal").addEventListener("click", () => {
   if (!$("view-editor").hidden) $("ed-back").click();
   if (!$("view-editor").hidden) return;
-  if (app.server) show("terminal");
+  show("terminal");
 });
 $("nav-files").addEventListener('click', () => {
   if (!$("view-editor").hidden) $("ed-back").click();

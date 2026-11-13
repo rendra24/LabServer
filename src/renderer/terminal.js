@@ -1,20 +1,26 @@
 import { app, onLeave, onShow, show } from './app.js';
 import { $, el, announce, showError } from './ui.js';
 import { icon } from './icons.js';
+import { withCredentials } from './creds.js';
 
 const api = window.api.terminal;
+const serversApi = window.api.servers;
 const encoder = new TextEncoder();
 const tabs = new Map();
+const sequence = new Map(); // serverId -> nomor tab terakhir
+const connecting = new Map(); // serverId -> koneksi yang sedang dibuat (dibagi antar-tab)
+const seeded = new Set(); // server workspace yang sudah dibuatkan tab otomatis
+const MAX_PER_SERVER = 8, MAX_TOTAL = 32;
 let current = null;
-let server = null;
-let sequence = 0;
+
+export const terminalCount = serverId => [...tabs.values()].filter(tab => tab.serverId === serverId).length;
 
 function theme() {
   return document.documentElement.dataset.theme === 'light'
     ? { background: '#ffffff', foreground: '#33415d', cursor: '#456cd8', selectionBackground: '#dbe5ff', black: '#33415d', brightBlack: '#73829d' }
     : { background: '#12151d', foreground: '#dce4f5', cursor: '#8daaff', selectionBackground: '#35476f', black: '#12151d', brightBlack: '#8290a9' };
 }
-const alive = state => state && !state.disposed && tabs.get(state.id) === state && state.server === app.server;
+const alive = state => state && !state.disposed && tabs.get(state.id) === state;
 
 function controls() {
   const active = current && !current.closed && !current.opening;
@@ -23,9 +29,10 @@ function controls() {
   $('term-close').disabled = !active;
   $('term-reopen').disabled = !current || !current.closed || current.opening;
   $('term-clear').disabled = !current;
-  $('term-new').disabled = !app.server || tabs.size >= 8;
-  $('term-new').title = tabs.size >= 8 ? 'Maksimal 8 tab. Tutup tab untuk membuka terminal baru.' : 'Buka sesi terminal baru';
+  $('term-new').disabled = tabs.size >= MAX_TOTAL;
+  $('term-new').title = tabs.size >= MAX_TOTAL ? `Maksimal ${MAX_TOTAL} tab. Tutup tab untuk membuka terminal baru.` : 'Pilih server dan buka sesi terminal baru';
   $('term-empty').hidden = Boolean(current);
+  $('term-shell-title').textContent = current ? `SSH shell - ${current.server.username}@${current.server.host}:${current.server.port}` : 'SSH shell';
   if (!current) $('term-size').textContent = '';
   for (const state of tabs.values()) {
     const selected = state === current;
@@ -34,7 +41,7 @@ function controls() {
     state.tab.tabIndex = selected ? 0 : -1;
     state.wrapper.classList.toggle('is-active', selected);
     state.wrapper.classList.toggle('is-closed', state.closed);
-    state.tab.title = `${state.name} - ${state.opening ? 'Membuka shell' : state.closed ? 'Shell ditutup' : 'Shell aktif'}`;
+    state.tab.title = `${state.name} (${state.server.username}@${state.server.host}) - ${state.opening ? 'Membuka shell' : state.closed ? 'Shell ditutup' : 'Shell aktif'}`;
   }
 }
 function fit() {
@@ -64,6 +71,17 @@ function dispose(state) {
   if (state.sessionId && !state.closed) api.close(state.serverId, state.sessionId).catch(() => {});
   state.observer.disconnect(); state.term.dispose();
   state.panel.remove(); state.wrapper.remove(); tabs.delete(state.id);
+}
+async function ensureConnected(target) {
+  const pending = connecting.get(target.id);
+  if (pending) return pending;
+  if ((await serversApi.connected()).includes(target.id)) return { ok: true };
+  if (connecting.has(target.id)) return connecting.get(target.id);
+  const attempt = withCredentials(target, creds => serversApi.connect(target.id, creds), app.canRemember)
+    .then(result => result || { ok: false, message: 'Koneksi dibatalkan.' })
+    .finally(() => connecting.delete(target.id));
+  connecting.set(target.id, attempt);
+  return attempt;
 }
 function remove(state) {
   if (!alive(state)) return;
@@ -98,6 +116,9 @@ async function open(state) {
   state.term.options.disableStdin = true;
   showError(''); controls(); fit();
   try {
+    const link = await ensureConnected(state.server);
+    if (!alive(state) || state.requestId !== requestId) return;
+    if (!link.ok) { end(state, link.message || 'Koneksi SSH gagal.'); return; }
     const result = await api.open(state.serverId, { cols: state.term.cols, rows: state.term.rows, requestId, ...(state.container ? { containerId: state.container.id, shell: state.container.shell, sudo: state.container.sudo } : {}) });
     if (!alive(state) || state.requestId !== requestId) {
       if (result.ok) await api.close(state.serverId, result.sessionId);
@@ -106,7 +127,7 @@ async function open(state) {
     state.opening = false;
     if (!result.ok) {
       end(state, result.message);
-      if (result.code === 'NOT_CONNECTED') loseConnection(result.message);
+      if (result.code === 'NOT_CONNECTED' && state.serverId === app.server?.id) loseConnection(result.message);
       return;
     }
     // Match early output by requestId, even when multiple opens are pending.
@@ -117,10 +138,12 @@ async function open(state) {
     if (current === state && !$('view-terminal').hidden) { fit(); state.term.focus(); }
   } catch { if (state.requestId === requestId) end(state, 'Shell SSH tidak dapat dibuka. Coba buka ulang terminal.'); }
 }
-function create(container = null) {
-  if (!app.server || server !== app.server) return;
-  if (tabs.size >= 8) { showError('Maksimal 8 tab terminal. Tutup salah satu tab sebelum membuka shell baru.'); return; }
-  const id = crypto.randomUUID(), name = container ? `Container · ${container.name}` : `Terminal ${++sequence}`;
+function create(server, container = null) {
+  if (!server) return;
+  if (terminalCount(server.id) >= MAX_PER_SERVER) { showError(`Maksimal ${MAX_PER_SERVER} tab terminal untuk ${server.name}. Tutup salah satu tab sebelum membuka shell baru.`); return; }
+  if (tabs.size >= MAX_TOTAL) { showError(`Maksimal ${MAX_TOTAL} tab terminal. Tutup salah satu tab sebelum membuka shell baru.`); return; }
+  const number = (sequence.get(server.id) || 0) + 1; sequence.set(server.id, number);
+  const id = crypto.randomUUID(), name = container ? `${server.name} · Container ${container.name}` : `${server.name} · ${number}`;
   const panel = el('div', { cls: 'terminal-session', attrs: { id: `terminal-session-${id}`, role: 'tabpanel', 'aria-labelledby': `terminal-tab-${id}` } });
   const tab = el('button', { text: name, cls: 'terminal-tab', attrs: { id: `terminal-tab-${id}`, type: 'button', role: 'tab', 'aria-controls': panel.id } });
   const close = el('button', { cls: 'terminal-tab-close', attrs: { type: 'button', 'aria-label': `Tutup tab ${name}`, title: `Tutup ${name}` } }, icon('close'));
@@ -147,14 +170,33 @@ function create(container = null) {
   state.observer = new ResizeObserver(() => { if (current === state) fit(); }); state.observer.observe(panel);
   select(state); open(state);
 }
+async function pickServer() {
+  let profiles, connected;
+  try { [profiles, connected] = await Promise.all([serversApi.list(), serversApi.connected()]); }
+  catch { showError('Daftar server tidak dapat dimuat. Coba lagi.'); return; }
+  if (!profiles.length) { showError('Belum ada server. Tambahkan server di menu Server terlebih dahulu.'); return; }
+  if (profiles.length === 1) { create(profiles[0]); return; }
+  const rows = [...profiles].sort((a, b) => Number(connected.includes(b.id)) - Number(connected.includes(a.id))).map(profile => {
+    const live = connected.includes(profile.id);
+    const option = el('button', { cls: 'btn term-server-option', attrs: { type: 'button' } },
+      el('strong', { text: profile.name }), el('small', { text: `${profile.username}@${profile.host}:${profile.port}` }),
+      el('span', { text: live ? 'Terhubung' : 'Belum terhubung', cls: `svc-badge ${live ? 'is-running' : ''}` }));
+    option.addEventListener('click', () => { $('term-server-dialog').close(); create(profile); });
+    return el('li', {}, option);
+  });
+  $('term-server-list').replaceChildren(...rows);
+  $('term-server-dialog').showModal();
+}
 function loseConnection(message) {
-  const keepDns = !$('view-dns').hidden;
-  app.server = null; show(keepDns ? 'dns' : 'servers', { preserve: keepDns }); showError(message);
+  const keep = !$('view-dns').hidden ? 'dns' : !$('view-terminal').hidden ? 'terminal' : null;
+  app.server = null; show(keep || 'servers', { preserve: Boolean(keep) }); showError(message);
 }
 api.onEvent(packet => {
-  if (packet.type === 'disconnected' && app.server?.id === packet.serverId) {
-    for (const state of tabs.values()) end(state, 'Koneksi SSH terputus.');
-    loseConnection('Koneksi SSH terputus. Hubungkan ulang untuk melanjutkan.'); return;
+  if (packet.type === 'disconnected') {
+    seeded.delete(packet.serverId);
+    for (const state of tabs.values()) if (state.serverId === packet.serverId) end(state, 'Koneksi SSH terputus.');
+    if (app.server?.id === packet.serverId) loseConnection('Koneksi SSH terputus. Hubungkan ulang untuk melanjutkan.');
+    return;
   }
   const state = [...tabs.values()].find(tab => alive(tab) && tab.serverId === packet.serverId && !tab.closed && (tab.sessionId === packet.sessionId || (tab.opening && tab.requestId === packet.requestId)));
   if (!state) return;
@@ -165,7 +207,7 @@ api.onEvent(packet => {
   } else if (packet.type === 'error') end(state, packet.message);
   else if (packet.type === 'exit') end(state, packet.code === null ? 'Sesi terminal berakhir.' : `Shell keluar dengan kode ${packet.code}.`);
 });
-$('term-new').addEventListener('click', () => create());
+$('term-new').addEventListener('click', () => pickServer());
 $('term-close').addEventListener('click', async () => {
   const state = current;
   if (!alive(state) || !state.sessionId || state.closed) return;
@@ -190,11 +232,8 @@ document.addEventListener('fullscreenchange', () => {
 window.addEventListener('resize', fit);
 document.addEventListener('theme-change', () => { for (const state of tabs.values()) state.term.options.theme = theme(); });
 onShow('terminal', params => {
-  $('term-shell-title').textContent = `SSH shell - ${app.server.username}@${app.server.host}:${app.server.port}`;
-  if (server !== app.server) {
-    for (const state of tabs.values()) dispose(state);
-    current = null; server = app.server; sequence = 0; create(params?.container);
-  } else if (params?.container) create(params.container);
+  if (params?.container && app.server) create(app.server, params.container);
+  else if (app.server && !params?.preserve && !seeded.has(app.server.id) && terminalCount(app.server.id) === 0) { seeded.add(app.server.id); create(app.server); }
   else { controls(); requestAnimationFrame(() => { fit(); current?.term.focus(); }); }
 });
 onLeave('terminal', () => { current?.term.blur(); if (document.fullscreenElement === $('term-panel')) document.exitFullscreen().catch(() => {}); });

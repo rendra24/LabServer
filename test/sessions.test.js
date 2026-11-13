@@ -146,3 +146,12 @@ test("monitor: PromError dipetakan ke kode & pesan ramah", async () => {
   assert.match(r.message, /Prometheus/);
   assert.ok(!r.message.includes("10.0.0.1"));
 });
+
+test("connectedIds mencantumkan server yang tersambung dan berhenti mencantumkannya setelah putus", async () => {
+  const { mgr } = setup();
+  assert.deepEqual(mgr.connectedIds(), []);
+  await mgr.connect("s1", {});
+  assert.deepEqual(mgr.connectedIds(), ["s1"]);
+  mgr.close("s1");
+  assert.deepEqual(mgr.connectedIds(), []);
+});

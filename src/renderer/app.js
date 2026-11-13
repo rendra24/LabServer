@@ -15,14 +15,14 @@ export function show(view, params) {
   current = view;
   for (const v of VIEWS) document.getElementById(`view-${v}`).hidden = v !== view;
   const connected = Boolean(app.server);
-  if (!['servers', 'dns'].includes(view)) app.serverView = view;
-  document.getElementById("server-workspace").hidden = !connected || ['servers', 'dns'].includes(view);
+  if (!['servers', 'dns', 'terminal'].includes(view)) app.serverView = view;
+  document.getElementById("server-workspace").hidden = !connected || ['servers', 'dns', 'terminal'].includes(view);
   document.getElementById("current-view").textContent = { servers: "Server", sites: "Konfigurasi Nginx", editor: "Editor konfigurasi", monitor: "Dashboard monitoring", terminal: "Terminal", files: "File manager", services: 'Service Manager', logs: 'Log Viewer', docker: 'Docker Manager', ssl: 'SSL Manager', tunnels: 'Port Forwarding', dns: "DNS Management" }[view];
   for (const name of ["servers", "monitor", "terminal", "sites", "files", "services", "logs", "docker", "ssl", "tunnels", "dns"]) {
     const nav = document.getElementById(`nav-${name}`);
-    nav.disabled = !['servers', 'dns'].includes(name) && !connected;
+    nav.disabled = !['servers', 'dns', 'terminal'].includes(name) && !connected;
     const active = name === view || (name === "sites" && view === "editor");
-    nav.classList.toggle("is-active", (name === "servers" && view !== 'dns') || active);
+    nav.classList.toggle("is-active", (name === "servers" && !['dns', 'terminal'].includes(view)) || active);
     if (active) nav.setAttribute("aria-current", "page");
     else nav.removeAttribute("aria-current");
     if (active && nav.classList.contains('server-tab')) nav.scrollIntoView({ block: 'nearest', inline: 'nearest' });

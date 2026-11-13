@@ -71,6 +71,7 @@ function createSessionManager({ open, getProfile, makeOps, makeMonitor, askSudoP
     snapshot(id,feature) {const session=sessions.get(id);return session?history?.read(id,feature,session.historyKey)||null:null;},
     hasTunnels: id => [...sessions.entries()].some(([key,session]) => (!id || key === id) && session.forwarding.hasActive()),
     isConnected: (id) => sessions.has(id),
+    connectedIds: () => [...sessions.keys()],
     close,
     closeAll: () => [...sessions.keys()].forEach(close),
     busyActions: id => [...sessions.entries()].some(([key, session]) => (!id || key === id) && (session.docker.active() || session.sslPending)),

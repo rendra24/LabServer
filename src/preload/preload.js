@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld("api", {
     test: call("servers:test"),
     forgetHostKey: call("servers:forgetHostKey"),
     connect: call("servers:connect"),
+    connected: call("servers:connected"),
     disconnect: call("servers:disconnect"),
   },
   monitor: (id, op, range) => ipcRenderer.invoke("monitor:call", id, op, range),
