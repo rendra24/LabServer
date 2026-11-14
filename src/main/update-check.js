@@ -1,8 +1,9 @@
-// Pengecek versi baru lewat GitHub Releases (repo publik). Tidak mengunduh/memasang apa pun:
-// aplikasi belum ditandatangani, jadi pembaruan dilakukan manual dari halaman rilis.
+// Pengecek versi baru lewat GitHub Releases (repo publik). Hanya membaca metadata; pengunduhan dan pemasangan
+// ada di update-install.js. Hanya nama aset yang diteruskan; URL selalu dibangun sendiri dari repo+tag.
 const TAG_PREFIX = "desktop-v";
 const SEMVER = /^(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?$/;
 const SLUG = /^[A-Za-z0-9._-]+$/;
+const ASSET_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 
 function parse(v) {
   const m = SEMVER.exec(String(v));
@@ -61,12 +62,15 @@ async function checkForUpdate({ current, repo, fetchImpl = fetch, timeoutMs = 80
     if (!r || r.draft || r.prerelease || typeof r.tag_name !== "string" || !r.tag_name.startsWith(TAG_PREFIX)) continue;
     const version = r.tag_name.slice(TAG_PREFIX.length);
     if (!SEMVER.test(version)) continue;
-    if (best === null || compareVersions(version, best.version) > 0) best = { version, tag: r.tag_name };
+    if (best === null || compareVersions(version, best.version) > 0) {
+      const assets = Array.isArray(r.assets) ? r.assets.map((a) => a?.name).filter((n) => typeof n === "string" && ASSET_NAME.test(n)) : [];
+      best = { version, tag: r.tag_name, assets };
+    }
   }
   if (!best) return { status: "no-releases", current };
   if (compareVersions(best.version, current) <= 0) return { status: "up-to-date", current, latest: best.version };
   // URL dibangun dari repo+tag, bukan dipercaya dari respons.
-  return { status: "available", current, latest: best.version, url: `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${best.tag}` };
+  return { status: "available", current, latest: best.version, tag: best.tag, assets: best.assets, url: `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${best.tag}` };
 }
 
 module.exports = { checkForUpdate, compareVersions, parseRepo, TAG_PREFIX };

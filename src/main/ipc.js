@@ -18,6 +18,7 @@ const { registerSystemIpc } = require('./system-ipc');
 const { registerServerToolsIpc } = require('./server-tools-ipc');
 const { createReadHistory } = require('./read-history');
 const { registerUpdateIpc } = require('./update-ipc');
+const { createUpdater } = require('./update-install');
 
 const str = (v) => (typeof v === "string" ? v : undefined);
 
@@ -93,7 +94,7 @@ function registerIpc() {
 
   registerBackupIpc({ handle, dialog, winOf, store, dir, isConnected: sessions.isConnected });
   registerDnsIpc({ handle, dialog, winOf, store });
-  registerUpdateIpc({ handle, dialog, winOf, shell });
+  registerUpdateIpc({ handle, dialog, winOf, shell, installer: createUpdater({ app, pkg: require('../../package.json') }) });
   registerForwardingIpc({ handle, dialog, winOf, store, sessions });
   registerSystemIpc({ handle, sessions, dialog, winOf, getProfile: id => store.get(id), askSudoPassword: (event, id, signal) => askSudoPassword(id, event, signal) });
   const files = registerFilesIpc({ handle, dialog, winOf, sessions, store });

@@ -52,5 +52,10 @@ Prioritas dokumen jika konflik: PRD > DATABASE > BACKEND > FRONTEND > ROLES/PERM
 - Sudoers memakai `(root)` bukan `(ALL)` sebagai run-as user: perintah sama, hak lebih sempit.
 - Docs OpenAPI (`/docs`) dimatikan: backend internal, kurangi permukaan.
 
+## Pembaruan di dalam aplikasi (2026-11)
+- Tanpa `electron-updater`: macOS menolak pembaruan bila tanda tangan bukan Developer ID. Alternatifnya buatan sendiri: unduh DMG dari Release repo sendiri, cocokkan SHA256, mount, salin ke samping aplikasi terpasang (`.app.update`), verifikasi `codesign`, bundle id dan versi, lalu skrip `/bin/sh` terpisah menukar folder setelah aplikasi keluar (rollback bila gagal). Semua langkah berisiko berjalan selagi aplikasi hidup.
+- Path tidak pernah disisipkan ke teks skrip (argumen posisi). Host unduhan dibatasi github.com/*.githubusercontent.com, nama aset tetap, ukuran maks 600 MB.
+- Batas yang diterima: SHA256 satu sumber dengan Release (bukan jaminan keaslian); izin Keychain bisa diminta ulang karena tanda tangan ad-hoc berubah.
+
 ## Usulan (TIDAK diimplementasikan)
 - (kosong)

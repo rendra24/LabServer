@@ -206,7 +206,7 @@ Build macOS menandatangani ulang bundle beserta komponen bersarang setelah packa
 CI: `.github/workflows/desktop.yml` menjalankan lint, tes, dan build `.dmg` di macOS; tag `desktop-v<versi>` membuat GitHub Release (lihat `RELEASING.md`).
 
 ## Batasan
-- Belum ada Developer ID signing/notarisasi, auto-update, build Linux.
+- Belum ada Developer ID signing/notarisasi dan build Linux. Pembaruan di dalam aplikasi (tombol **Periksa pembaruan** → **Perbarui sekarang**) hanya untuk macOS dan memakai checksum, bukan tanda tangan Apple (lihat `RELEASING.md`).
 - Hapus berkas tersedia melalui File manager; daftar Konfigurasi Nginx belum memiliki tombol hapus tersendiri.
 - Installer Windows dibangun lewat cross-build dari macOS dan **belum pernah dijalankan di Windows**.
 

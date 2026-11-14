@@ -28,7 +28,17 @@ test("parseRepo dari package.json; placeholder/format salah = belum dikonfiguras
 
 test("versi baru tersedia -> status available + URL halaman rilis", async () => {
   const r = await checkForUpdate({ current: "0.1.0", repo, fetchImpl: fakeFetch([release(`${TAG_PREFIX}0.2.0`)]) });
-  assert.deepEqual(r, { status: "available", current: "0.1.0", latest: "0.2.0", url: "https://github.com/acme/vps-panel/releases/tag/desktop-v0.2.0" });
+  assert.deepEqual(r, { status: "available", current: "0.1.0", latest: "0.2.0", tag: "desktop-v0.2.0", assets: [], url: "https://github.com/acme/vps-panel/releases/tag/desktop-v0.2.0" });
+});
+
+test("available memuat tag dan HANYA nama aset yang aman (tanpa URL dari respons)", async () => {
+  const r = await checkForUpdate({
+    current: "0.1.0", repo,
+    fetchImpl: fakeFetch([release(`${TAG_PREFIX}0.2.0`, { assets: [{ name: "LabServer-macOS-arm64.dmg", browser_download_url: "https://evil.example/x" }, { name: "../../etc/passwd" }, { name: "SHA256SUMS.txt" }, { name: 42 }] })]),
+  });
+  assert.equal(r.tag, "desktop-v0.2.0");
+  assert.deepEqual(r.assets, ["LabServer-macOS-arm64.dmg", "SHA256SUMS.txt"]);
+  assert.ok(!JSON.stringify(r).includes("evil.example"));
 });
 
 test("pilih versi tertinggi dari tag desktop saja; abaikan draft/prarilis/tag lain", async () => {

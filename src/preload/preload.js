@@ -6,6 +6,7 @@ const call = (channel) => (...args) => ipcRenderer.invoke(channel, ...args);
 contextBridge.exposeInMainWorld("api", {
   info: call("app:info"),
   checkUpdate: call('update:check'),
+  onUpdateProgress(handler) { const listener = (_event, packet) => handler(packet); ipcRenderer.on('update:progress', listener); return () => ipcRenderer.removeListener('update:progress', listener); },
   history: {get:call('history:get')},
   docker: { call: call('docker:call'), cancel: call('docker:cancel') },
   ssl: { call: call('ssl:call'), cancel: call('ssl:cancel') },

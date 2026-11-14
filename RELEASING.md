@@ -1,6 +1,6 @@
 # Merilis versi baru (desktop, macOS)
 
-Pemakaian internal: installer **belum ditandatangani/dinotarisasi**, jadi tidak ada auto-update. Pengguna memeriksa versi baru lewat tombol **Periksa pembaruan** di sidebar (membuka halaman Releases) dan memasang installer baru di atas yang lama.
+Pemakaian internal: installer **belum ditandatangani/dinotarisasi**, jadi tidak memakai `electron-updater`. Pengguna menekan **Periksa pembaruan** di sidebar; bila ada versi baru, dialog menawarkan **Perbarui sekarang** (unduh, verifikasi, pasang, buka ulang di dalam aplikasi), **Buka halaman rilis** (manual), atau **Nanti**.
 
 ## Sekali saja
 1. Buat repo GitHub dan push.
@@ -18,6 +18,14 @@ Workflow `.github/workflows/desktop.yml` (macOS) lalu: lint → tes → build `.
 
 ## Format versi
 Semver `MAJOR.MINOR.PATCH`. Hanya tag berawalan `desktop-v` yang dihitung sebagai rilis aplikasi desktop; draft dan pre-release diabaikan oleh pengecek.
+
+## Pembaruan di dalam aplikasi
+Syarat agar **Perbarui sekarang** muncul dan berhasil (macOS, aplikasi terpasang di folder yang bisa ditulis, mis. `/Applications`):
+- Release memuat `LabServer-macOS-arm64.dmg` dan/atau `LabServer-macOS-x64.dmg` **dengan nama persis itu**, plus `SHA256SUMS.txt` (dibuat otomatis oleh workflow).
+- Aplikasi mengunduh dari `github.com/<owner>/<repo>/releases/download/<tag>/...` saja, mencocokkan SHA256, memastikan tanda tangan bundle valid, bundle id `appId`, dan versi sama dengan tag, lalu menukar `LabServer.app` setelah aplikasi keluar. Jika penukaran gagal, aplikasi lama dikembalikan.
+- Jika ada perubahan belum tersimpan, penutupan aplikasi meminta konfirmasi seperti biasa. Bila dibatalkan, skrip penukar menyerah setelah ±3 menit dan versi lama tetap berjalan.
+- Keamanan: SHA256 hanya membuktikan unduhan utuh, bukan keaslian (checksum berasal dari Release yang sama). Keaslian penuh butuh tanda tangan Developer ID.
+- Setelah pembaruan, tanda tangan ad-hoc berubah sehingga macOS dapat meminta izin Keychain lagi untuk password yang tersimpan.
 
 ## Nanti (bila ada sertifikat)
 Tanda tangan + notarisasi macOS (Apple Developer Program) membuka jalan ke auto-update penuh dengan `electron-updater`; pada macOS update otomatis mensyaratkan aplikasi bertanda tangan.
