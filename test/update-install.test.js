@@ -225,3 +225,20 @@ test('createUpdater.install: tidak berjalan ganda', async () => {
   assert.match(second.message, /sedang berjalan/i);
   await first;
 });
+
+test('createUpdater.install: penjaga tutup menolak -> batal dengan pesan, skrip tidak jalan', async () => {
+  const { u, events, quit } = updater({ beforeQuit: async () => false });
+  const result = await u.install(release, () => {});
+  assert.equal(result.ok, false);
+  assert.match(result.message, /dibatalkan/i);
+  assert.equal(events.length, 0);
+  assert.deepEqual(quit, []);
+});
+
+test('createUpdater.install: keluar lewat exit() bila diberikan, bukan app.quit', async () => {
+  const exited = [];
+  const { u, quit } = updater({ exit: () => exited.push(1) });
+  assert.deepEqual(await u.install(release, () => {}), { ok: true });
+  assert.deepEqual(exited, [1]);
+  assert.deepEqual(quit, []);
+});

@@ -142,7 +142,7 @@ function launchSwap({ spawn = nodeSpawn, pid, target, staged, workDir }) {
   child.unref();
 }
 
-function createUpdater({ app, pkg, platform = process.platform, arch = process.arch, pid = process.pid, exePath = process.execPath, fetchImpl = fetch, run: runner = run, spawn = nodeSpawn }) {
+function createUpdater({ app, pkg, platform = process.platform, arch = process.arch, pid = process.pid, exePath = process.execPath, fetchImpl = fetch, run: runner = run, spawn = nodeSpawn, beforeQuit = async () => true, exit = () => app.quit() }) {
   let installing = false;
   const target = platform === 'darwin' ? appBundleFromExe(exePath) : null;
 
@@ -174,9 +174,11 @@ function createUpdater({ app, pkg, platform = process.platform, arch = process.a
       emit({ phase: 'install' });
       const staged = await stageUpdate({ dmgPath, target, workDir: work, expected: { id: pkg.build.appId, version: release.version }, run: runner });
       emit({ phase: 'restart' });
+      // Penjaga tutup (perubahan belum disimpan, transfer berjalan) dijalankan sebelum skrip penukar; batal = pembaruan dibatalkan dengan pesan.
+      if (!(await beforeQuit())) return { ok: false, message: 'Pembaruan dibatalkan: penutupan aplikasi ditolak (perubahan belum disimpan atau operasi masih berjalan). Coba lagi setelah selesai.' };
       launchSwap({ spawn, pid, target, staged, workDir: work });
       work = null; // dibersihkan oleh skrip penukar
-      app.quit();
+      exit(); // app.exit: before-quit/close handler aplikasi tidak boleh membatalkan penukaran diam-diam
       return { ok: true };
     } catch (e) {
       return { ok: false, message: e instanceof UpdateError ? e.message : 'Pembaruan gagal. Coba lagi atau pasang manual dari halaman rilis.' };

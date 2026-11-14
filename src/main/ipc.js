@@ -23,6 +23,7 @@ const { createUpdater } = require('./update-install');
 const str = (v) => (typeof v === "string" ? v : undefined);
 
 function registerIpc() {
+  let lifecycle;
   const dir = app.getPath("userData");
   const cryptoImpl = safeStorage.isEncryptionAvailable()
     ? { encrypt: (s) => safeStorage.encryptString(s), decrypt: (b) => safeStorage.decryptString(b) }
@@ -94,7 +95,9 @@ function registerIpc() {
 
   registerBackupIpc({ handle, dialog, winOf, store, dir, isConnected: sessions.isConnected });
   registerDnsIpc({ handle, dialog, winOf, store });
-  registerUpdateIpc({ handle, dialog, winOf, shell, installer: createUpdater({ app, pkg: require('../../package.json') }) });
+  registerUpdateIpc({ handle, dialog, winOf, shell, installer: createUpdater({ app, pkg: require('../../package.json'),
+    beforeQuit: async () => { for (const w of BrowserWindow.getAllWindows()) if (!(await lifecycle.canClose(w))) return false; return true; },
+    exit: () => { lifecycle.dispose(); app.exit(0); } }) });
   registerForwardingIpc({ handle, dialog, winOf, store, sessions });
   registerSystemIpc({ handle, sessions, dialog, winOf, getProfile: id => store.get(id), askSudoPassword: (event, id, signal) => askSudoPassword(id, event, signal) });
   const files = registerFilesIpc({ handle, dialog, winOf, sessions, store });
@@ -190,7 +193,7 @@ function registerIpc() {
     });
     return r.canceled ? null : r.filePaths[0];
   });
-  return {
+  lifecycle = {
     dispose() { files.dispose(); sessions.closeAll(); },
     async canClose(win) {
       const sender = win.webContents;
@@ -207,6 +210,7 @@ function registerIpc() {
       return r.response === 1;
     },
   };
+  return lifecycle;
 }
 
 module.exports = { registerIpc };
